@@ -1,3 +1,14 @@
+// 🔥 PERMANENTLY DISABLE ALL SERVICE WORKERS — KILL + BLOCK 🔥
+if ("serviceWorker" in navigator) {
+  // Kill all existing SWs
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
+  });
+
+  // Block all future SW registrations
+  navigator.serviceWorker.register = () => Promise.resolve(null);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const db = firebase.firestore();
 
