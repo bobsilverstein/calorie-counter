@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Calorie Counter v190</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-gray-100">
+
+  <div id="viewLog" class="view">
+    <button id="prevDay">◀</button>
+    <span id="dayName"></span>
+    <span id="dayDate"></span>
+    <button id="nextDay">▶</button>
+    <button id="todayButton">Today</button>
+
+    <div id="shabbatInfo" class="hidden">
+      <div id="shabbatCandles"></div>
+      <div id="shabbatParsha"></div>
+    </div>
+
+    <div id="mealsList"></div>
+    <div id="totalCalories"></div>
+
+    <textarea id="exerciseComment"></textarea>
+    <input id="weightValue" type="number">
+    <input id="tefillinCheckbox" type="checkbox">
+    <input id="tefillinComment">
+    <button id="tefillinClear">Clear</button>
+    <button id="tefillinMic">🎤</button>
+
+    <button id="logSave">Save</button>
+    <button id="openLocation">Location</button>
+  </div>
+
+  <div id="locationModal" class="hidden">
+    <input id="locationInput">
+    <button id="locationSave">Save</button>
+    <button id="locationClose">Close</button>
+  </div>
+
+  <div id="viewAdd" class="view hidden"></div>
+  <div id="viewFoods" class="view hidden"></div>
+
+ <!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<!-- Your Firebase config -->
+<script src="firebase-config.js"></script>
+
+<!-- Your app code (must be LAST) -->
+<script src="app.js?v=190"></script>
+
+
+</body>
+</html>

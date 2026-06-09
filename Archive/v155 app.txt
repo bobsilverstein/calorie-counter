@@ -1,0 +1,86 @@
+// v155 app.js — single chunk
+
+let currentDate = new Date();
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+document.addEventListener("DOMContentLoaded", () => {
+  auth.onAuthStateChanged(user => {
+    if (!user) return;
+    showLog();
+  });
+});
+
+function formatDate(d) {
+  return d.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function dateKey(d) {
+  return d.toISOString().split("T")[0];
+}
+
+function changeDay(offset) {
+  currentDate.setDate(currentDate.getDate() + offset);
+  showLog();
+}
+
+function showLog() {
+  document.getElementById("dateDisplay").textContent = formatDate(currentDate);
+  loadLog();
+}
+
+async function loadLog() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const key = dateKey(currentDate);
+  const ref = db.collection("users").doc(user.uid).collection("logs").doc(key);
+  const snap = await ref.get();
+
+  let data = snap.exists ? snap.data() : {
+    Breakfast: [],
+    Lunch: [],
+    Snack: [],
+    Dinner: []
+  };
+
+  updateMealCalories("Breakfast", data.Breakfast);
+  updateMealCalories("Lunch", data.Lunch);
+  updateMealCalories("Snack", data.Snack);
+  updateMealCalories("Dinner", data.Dinner);
+
+  const total =
+    sumCalories(data.Breakfast) +
+    sumCalories(data.Lunch) +
+    sumCalories(data.Snack) +
+    sumCalories(data.Dinner);
+
+  document.getElementById("caloriesToday").textContent =
+    total + " calories today";
+}
+
+function sumCalories(arr) {
+  return arr.reduce((t, f) => t + (f.calories || 0), 0);
+}
+
+function updateMealCalories(meal, arr) {
+  const el = document.getElementById(meal + "Calories");
+  el.textContent = sumCalories(arr) + " cal";
+}
+
+function openMeal(meal) {
+  window.location.href = "meals.html?meal=" + meal + "&date=" + dateKey(currentDate);
+}
+
+function showMeals() {
+  window.location.href = "meals.html?date=" + dateKey(currentDate);
+}
+
+function showFoods() {
+  window.location.href = "foods.html";
+}

@@ -1,0 +1,126 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #fafafa;
+  color: #222;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-around;
+  background: #1976d2;
+  padding: 12px 0;
+}
+
+.topbar button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.view {
+  padding: 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+.dateNav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 10px;
+}
+
+.arrowBtn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+.dateLine {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.todayCalories {
+  text-align: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+#mealList {
+  margin-top: 20px;
+  padding-bottom: 200px;
+}
+
+.mealRow {
+  display: flex;
+  justify-content: space-between;
+  background: white;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-bottom: 18px;
+  font-size: 18px;
+}
+
+.versionTag {
+  text-align: center;
+  margin-top: 20px;
+  color: #777;
+  font-size: 12px;
+}
+
+/* Foods view */
+#foodSearch {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+#foodResults div {
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+}
+
+/* Add modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modalContent {
+  background: white;
+  padding: 20px;
+  width: 300px;
+  border-radius: 8px;
+}
+
+.modalContent input,
+.modalContent select {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.closeBtn {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 20px;
+}

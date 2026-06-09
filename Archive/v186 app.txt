@@ -1,0 +1,321 @@
+/* ============================================================
+   v186 — app.js (Regenerated for your Firestore structure)
+   THIS IS THE START OF CHUNK 2
+   ============================================================ */
+
+console.log("v186 app.js loaded");
+
+let currentDate = new Date();
+let selectedMeal = null;
+let foods = {};
+let userId = null;
+
+/* ---------------- AUTH ---------------- */
+
+firebase.auth().onAuthStateChanged(async (user) => {
+  if (!user) {
+    document.getElementById("mealContainer").innerHTML =
+      "<p class='p-4 text-gray-600'>Please sign in.</p>";
+    return;
+  }
+
+  userId = user.uid;
+
+  await loadFoods();
+  renderDay();
+});
+
+/* ---------------- DATE HANDLING ---------------- */
+
+function formatDate(d) {
+  return d.toISOString().split("T")[0];
+}
+
+function changeDate(offset) {
+  currentDate.setDate(currentDate.getDate() + offset);
+  renderDay();
+}
+
+function renderDay() {
+  const dateStr = formatDate(currentDate);
+  document.getElementById("headerDate").textContent = dateStr;
+
+  updateShabbatBanner();
+  loadMealsForDay(dateStr);
+}
+
+/* ---------------- MEALS ---------------- */
+
+async function loadMealsForDay(dateStr) {
+  const mealContainer = document.getElementById("mealContainer");
+  mealContainer.innerHTML = "";
+
+  const mealsRef = firebase
+    .firestore()
+    .collection("users")
+    .doc(userId)
+    .collection("logs")
+    .doc(dateStr)
+    .collection("meals");
+
+  const snapshot = await mealsRef.get();
+
+  let totalCalories = 0;
+
+  ["breakfast", "lunch", "snack", "dinner"].forEach((mealName) => {
+    const mealDiv = document.createElement("div");
+    mealDiv.className = "bg-white p-3 rounded shadow";
+
+    const mealDocs = snapshot.docs.filter(
+      (d) => d.data().meal === mealName
+    );
+
+    let mealCalories = 0;
+
+    mealDocs.forEach((doc) => {
+      const entry = doc.data();
+      mealCalories += entry.calories;
+    });
+
+    totalCalories += mealCalories;
+
+    mealDiv.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div class="font-bold capitalize">${mealName}</div>
+        <div class="text-sm text-gray-600">${mealCalories} cal</div>
+      </div>
+      <button onclick="openAddFood('${mealName}')"
+        class="text-purple-600 text-xs mt-1">+ add to ${mealName}</button>
+    `;
+
+    mealContainer.appendChild(mealDiv);
+  });
+
+  document.getElementById("headerCalories").textContent =
+    `${totalCalories} calories today`;
+}
+
+/* ---------------- ADD FOOD MODAL ---------------- */
+
+function openAddFood(meal) {
+  selectedMeal = meal;
+  document.getElementById("addFoodModal").classList.remove("hidden");
+  highlightMealButton(meal);
+}
+
+function closeAddFood() {
+  document.getElementById("addFoodModal").classList.add("hidden");
+}
+
+function pickMeal(meal) {
+  selectedMeal = meal;
+  highlightMealButton(meal);
+}
+
+function highlightMealButton(meal) {
+  ["breakfast", "lunch", "snack", "dinner"].forEach((m) => {
+    const btn = document.getElementById(`mealBtn_${m}`);
+    if (m === meal) {
+      btn.classList.add("border-purple-500", "bg-purple-50");
+    } else {
+      btn.classList.remove("border-purple-500", "bg-purple-50");
+    }
+  });
+}
+
+/* ---------------- FOOD SEARCH ---------------- */
+
+function filterAddFoods() {
+  const q = document.getElementById("addFoodSearch").value.toLowerCase();
+  const results = document.getElementById("addFoodResults");
+  results.innerHTML = "";
+
+  Object.keys(foods)
+    .filter((id) => foods[id].name.toLowerCase().includes(q))
+    .forEach((id) => {
+      const f = foods[id];
+      const div = document.createElement("div");
+      div.className =
+        "p-2 bg-white border rounded mb-1 cursor-pointer hover:border-purple-400";
+      div.onclick = () => selectFood(id);
+      div.innerHTML = `
+        <div class="font-semibold text-sm">${f.name}</div>
+        <div class="text-xs text-gray-500">${f.calPerUnit} cal/${f.unit}</div>
+      `;
+      results.appendChild(div);
+    });
+}
+
+/* ---------------- SELECT FOOD ---------------- */
+
+function selectFood(foodId) {
+  const f = foods[foodId];
+  if (!f) return;
+
+  const dateStr = formatDate(currentDate);
+
+  firebase
+    .firestore()
+    .collection("users")
+    .doc(userId)
+    .collection("logs")
+    .doc(dateStr)
+    .collection("meals")
+    .add({
+      meal: selectedMeal,
+      foodId: foodId,
+      name: f.name,
+      unit: f.unit,
+      calories: f.calPerUnit,
+      timestamp: Date.now(),
+    });
+
+  closeAddFood();
+  renderDay();
+}
+
+/* ---------------- LOAD FOODS (YOUR FIRESTORE STRUCTURE) ---------------- */
+
+async function loadFoods() {
+  const ref = firebase.firestore().collection("Foods"); // capital F
+  const snapshot = await ref.get();
+
+  foods = {};
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+
+    // Bulletproof mapping
+    const name = data.Food || data.food || "";
+    const unit = data.Unit || data.unit || "";
+    const cal = Number(data.CaloriesPerServing || data.calories || 0);
+
+    if (!name) return; // skip broken entries
+
+    foods[doc.id] = {
+      name: name,
+      unit: unit,
+      calPerUnit: cal,
+    };
+  });
+
+  renderFoodsList();
+}
+
+function renderFoodsList() {
+  const list = document.getElementById("foodResults");
+  list.innerHTML = "";
+
+  Object.keys(foods).forEach((id) => {
+    const f = foods[id];
+    const div = document.createElement("div");
+    div.className =
+      "p-2 bg-white border rounded mb-1 cursor-pointer hover:border-purple-400";
+    div.innerHTML = `
+      <div class="font-semibold text-sm">${f.name}</div>
+      <div class="text-xs text-gray-500">${f.calPerUnit} cal/${f.unit}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* ---------------- FILTER FOODS ---------------- */
+
+function filterFoods() {
+  const q = document.getElementById("foodSearch").value.toLowerCase();
+  const list = document.getElementById("foodResults");
+  list.innerHTML = "";
+
+  Object.keys(foods)
+    .filter((id) => foods[id].name.toLowerCase().includes(q))
+    .forEach((id) => {
+      const f = foods[id];
+      const div = document.createElement("div");
+      div.className =
+        "p-2 bg-white border rounded mb-1 cursor-pointer hover:border-purple-400";
+      div.innerHTML = `
+        <div class="font-semibold text-sm">${f.name}</div>
+        <div class="text-xs text-gray-500">${f.calPerUnit} cal/${f.unit}</div>
+      `;
+      list.appendChild(div);
+    });
+}
+
+/* ---------------- VIEW SWITCHING ---------------- */
+
+function showView(id) {
+  ["logView", "foodsView", "servingsView"].forEach((v) => {
+    document.getElementById(v).classList.add("hidden");
+  });
+
+  document.getElementById(id).classList.remove("hidden");
+}
+
+/* ---------------- VOICE INPUT ---------------- */
+
+function voiceInput(targetId, append, callback) {
+  try {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported.");
+      return;
+    }
+
+    const rec = new SpeechRecognition();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+
+    rec.onresult = (e) => {
+      const text = e.results[0][0].transcript;
+      const input = document.getElementById(targetId);
+
+      if (append) {
+        input.value = input.value + " " + text;
+      } else {
+        input.value = text;
+      }
+
+      if (callback) callback();
+    };
+
+    rec.start();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function voiceFilterFoods() {
+  filterFoods();
+}
+
+function voiceFilterAddFoods() {
+  filterAddFoods();
+}
+
+/* ---------------- SHABBAT MODE ---------------- */
+
+function isShabbat(date) {
+  const day = date.getDay();
+  return day === 5 || day === 6;
+}
+
+function updateShabbatBanner() {
+  const banner = document.getElementById("shabbatBanner");
+  if (isShabbat(currentDate)) {
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
+  }
+}
+
+/* ---------------- INIT ---------------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+  updateShabbatBanner();
+});
+
+/* ============================================================
+   THIS IS THE END OF CHUNK 2
+   ============================================================ */

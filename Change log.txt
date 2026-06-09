@@ -1,0 +1,135 @@
+All the DONE changes are going into v192.
+
+Old changes to be restored to the new v188
+
+1) oprning log is for monday but shows sunday's data.  Need to fix that. 
+
+2)on shabbos, do not gray out the tefillin data box.  just gray out the check boc.  DONE
+
+3) saturday has two full sets of meals.  fix it. 
+
+4) We agreed to advance the days until next friday so we can see candleight and parsha.  This is not working.   
+
+5) want the parsha in both Hebrew and english.  
+
+6) I am in Elk Grove Village.  Use this location instead of Chicago.  
+
+7) cannot see the bottom menu on the phone.
+
+1. Fixed date bug  DONE
+Local‑time fmt() so Monday no longer loads Sunday’s data.
+
+2. Tefillin rule corrected  DONE
+On Shabbos/Yom Tov: only the checkbox is disabled; comment box stays active.
+
+3. Saturday double‑meals bug fixed  DONE
+Removed duplicate loadLog() trigger.
+
+4. Forward‑day navigation unlocked  DONE
+You can advance past today to reach next Friday for candle/parsha.
+
+5. Parsha improved  DONE
+Shows English + Hebrew.
+
+6. Manual location added  DONE
+“Change location” link inside Shabbat box → opens modal → saves to localStorage.
+
+7. Bottom menu fixed  DONE
+Always visible on phone; removed overflow clipping.
+
+8. Elk Grove Village default  DONE
+Coordinates now default to EGV unless user overrides.
+
+====================================================
+
+v190
+Could not get this work.  Restored v186 and that works great.  Upload these to AI and start adding the features back.
+
+v189 
+could not debug
+
+v188
+it has the look.  1) oprning log is for monday but shows sunday's data.  Need to fix that. 2)on shabbos, do not gray out the tefillin data box.  just gray out the check boc.  3) saturday has two full sets of meals.  fix it. 4) We agreed to advance the days until next friday so we can see candleight and parsha.  This is not working.    5) want the parsha in both Hebrew and english.  6) I am in Elk Grove Village.  Use this location instead of Chicago.  7) cannot see the bottom menu on the phone.
+
+1. Fixed date bug  
+Local‑time fmt() so Monday no longer loads Sunday’s data.
+
+2. Tefillin rule corrected  
+On Shabbos/Yom Tov: only the checkbox is disabled; comment box stays active.
+
+3. Saturday double‑meals bug fixed  
+Removed duplicate loadLog() trigger.
+
+4. Forward‑day navigation unlocked  
+You can advance past today to reach next Friday for candle/parsha.
+
+5. Parsha improved  
+Shows English + Hebrew.
+
+6. Manual location added  
+“Change location” link inside Shabbat box → opens modal → saves to localStorage.
+
+7. Bottom menu fixed  
+Always visible on phone; removed overflow clipping.
+
+8. Elk Grove Village default  
+Coordinates now default to EGV unless user overrides.
+
+v187
+reverted back to v183 and applied the changes under v184 and create v187.  Works.
+Servings integer buttons — added +/− to change servings by whole numbers.
+
+Tefillin/weight/exercise save fix — wrapped all auto‑saves with if(!suppressSave) so only Save button or screen‑change saves.
+
+Forward arrow restored — removed the “hide on today” toggle.
+
+Parsha in English — switched to parsha.title.
+
+Servings auto‑save + clear — saving on Save or leaving screen, then clearing.
+
+Foods save + clear — save now clears; clear works.
+
+Allow scrolling — enabled vertical scroll without changing text.
+
+v185
+Not working.
+
+v184
+1) candle lighting and parsha (Torah reading) not showing up for last Friday.  2) move Scan UPC from Servings to Food.  3) on the log screen, hitting either day changing error triggers a save event.  4) we have a problem with the Foods database on the Foods screen.  Look at the screen shot.  it did not pick the Units  and the serving size is blank.  Hence Calories per g not calculated.  see the screen shot.  Calories per g = CaloriesPerServing divided by ServingSize and displayed to two decimal points.  Unit = g needs to highlight the Grams button.  5) for the candle lighting, can you add the name of the location
+
+v183
+Add UPC scans. Gray out no Tefillin days.  Add parsha and candle lighting.
+
+v182
+Finally have the final product and ready to use.  See separate deployment summary.
+
+v180
+1) regarding the Servings screen, search not working.  I have to go back and forth between the mic and text line to enter a food to search for.  Clean that up.  2) Here are the fields you need: search, Food, Comment, Calories per gram or Calories per piece as controlled by the Units, Serving size (input), Serving calories (calculated).  3) this screen has three inputs: Meal, Food, and Serving size.  Everything else is either read-only from the database or calculated.  4) On the Foods screen, the search line is also erratic.  5) the two search bars should work the same way: turn the mic on either by clicking on the text box or the mic.  In either case, display the mic on icon and when the input audio is done, search without my clicking on the text box.  5) The fields are: search bar, Food, Comment, Units *Grams or pieces) Calories, Serving size, and Calories per (Unit).  All fields are data to be entered.  Calories per (Unit) is calculated.  6) I raised these issues before but either you are not responding or your coding is wrong.
+
+v136
+1) change date style to Saturday, June 6, 2026  2) remove right arrow if date is today  3) add the Tefillin icon, label, check box, and text entry with mic.  4) add Weight icon and text box with mic.  no scrolling, default is empty.  in tenths of a pound.  5) add Exercise icon and text box with mic.  6) add Today button to blue box to jump back to today when browsing through the log.  7) make this v170
+
+v171
+1) make the text on top +25%.  2) remove tday button if date = today.  3) everytime the date changes, refressh the meals to just the four wanted.  4) mic does not work.  5) do not like the today button.  do not like the black, gray, white.  simplify.  6) next is v172
+
+
+v172
+1) round all four corners of the blue box.  2) move the arrows back to the box and make them white.  3) put back the today button.  4) change white text in blue box to bold.  5) add clear button for the text boxes.  6) make the default weight the most recent one in the log.
+
+v173
+1) move the today button to the lower right of the blue box.  2) center the arrows, date and calories vertically  3) make v174 as one index and two app chunks without pausing between chunks.
+
+v174
+1) get terser.  2) make the blue box 25% less hight.  3) the box size is the same for all dates.  4) when opening the app, the tefillin and excercise boxes are empty.  only the weight box has a default value.  5) moving on to the meals screen, add a clear button.  6) add speed keys, Alt C and Alt S for the clear and save buttons.  7) clear the search results after something is chosen.  8) remove the unit buttons, cal per gram and serving size used in calculating cal per gram or unit.  8) display food, comment , Calories per gram or Calories each depending upon whether the unit is grams or pieces, Calories in this serving.  9) add the mic for the search bar and serving size.  10) deliver v174 as one index and two app chunks without pausing between.
+ 
+v175
+1) move the date up so it is in the middle of the box.  2) date appears in same space regardless of day.  3) add clear and save buttons and speed keys on log screen.  4) capitalize the first letter of the meals.  5) on meals screen, search not working.  6) need clear buttons on each text box.  7) if unit is grams, then the label is Calories per gram while if the unit is each, then the label is Calories per piece.  8) search bar not working.  9) need the calculated Calories for this serving.  10) for all text boxes, once the mouse gives it focus, turn the mic on.  11) change the mic to indicate that it is listening.  12) next version is v176.  13) deliver index as one chunk, app as two chunks without pausing. 14) be extremely terse.  you are too wordy.
+
+v176
+1) the following apply to the Log screen.  2) make the three text boxes the same width.  3) tab just from tefillin to weight to exercise and back.  4) is the save working  5) remove the speed key labels but keep the speed key.  Underline the first letter when Alt is pressed.  6) Move the day up.  7) spell out the day; do not abbreviate it.   8) put the X buttons on the text box like on the Meals screen.  9) these apply to the meals screen.  10) lunch, snack dinner buttons do not work.  11) clearning the search line removes the food list.  12) calories per gram being calculated incorrectly.  13) Calories in this serving not showing.  14) food, comment calories per gram or Calories per pice are all protected fields so the tabbing should start at the serving size.  15) Alt C speedkey does not work.  16) back to the log screen, just show the food, comment, serviing size and calories eaten on one line with the calories eaten being right justified.
+
+v177
+1) changes for Log screen.  2) move the date up a little and do three lines: day, date,calories  3) back arrow does not work.  4) entire version number not showing.  5) make the version number a little bolder.  6) on the Meals screen, no search results displayed.  7) Calories in serving not showing.  8) still cannot select other meals.  9) comments for foods screen start with no clear and save buttons as those on the meals screen  10) need fields for Food name, Comment, Calories, Serving size
+
+v179
+1) this is how I want the box to look like.  put all the elements pretty close to where they are shown.  2) whenever the mouse rolls over an object it can change, change it to a hand like you already have in some instances already.  3) meal buttons on meals screen does not work.  4) still do not show the Calories in this serviing calculation.  5) need to show the comment in the search results.  6) freeze the entire screen from moving when hitting various buttons and search tool.  7) on both screens, remove the search results once something is selected  8) I think when I save it meal, it replaces the last meal on the log screen.  the log screen should save all meals and meals should really be called servings.  9) add the time hh:mm AM/PM to the version timestamp.

@@ -1,0 +1,201 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const logView = document.getElementById("logView");
+  const addFoodView = document.getElementById("addFoodView");
+  const foodsView = document.getElementById("foodsView");
+
+  const dateLabel = document.getElementById("dateLabel");
+  const summaryBar = document.getElementById("summaryBar");
+
+  const addFoodSearch = document.getElementById("addFoodSearch");
+  const addFoodResults = document.getElementById("addFoodResults");
+
+  const foodsSearch = document.getElementById("foodsSearch");
+  const foodsList = document.getElementById("foodsList");
+
+  const backFromAdd = document.getElementById("backFromAdd");
+  const backFromFoods = document.getElementById("backFromFoods");
+
+  const versionTag = document.getElementById("versionTag");
+
+  let currentDate = new Date();
+  let submitLock = false;
+
+  // Version footer
+  function formatVersionTimestamp() {
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return `Version 109 (increment automatically on each save), ${mm}/${dd}/${yyyy} ${time}`;
+  }
+
+  versionTag.textContent = formatVersionTimestamp();
+
+  function fmt(d) {
+    return d.toISOString().split("T")[0];
+  }
+
+  function show(view) {
+    logView.classList.remove("active");
+    addFoodView.classList.remove("active");
+    foodsView.classList.remove("active");
+    view.classList.add("active");
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      logView.innerHTML = "<p style='padding:12px;'>Please sign in.</p>";
+      return;
+    }
+    renderLog();
+  });
+
+  function renderLog() {
+    dateLabel.textContent = currentDate.toDateString();
+
+    const uid = auth.currentUser.uid;
+    const dateKey = fmt(currentDate);
+
+    db.collection("logs").doc(uid).collection("days").doc(dateKey).get()
+      .then(doc => {
+        const data = doc.exists ? doc.data() : { meals: {} };
+        const meals = data.meals || {};
+
+        let total = 0;
+        Object.values(meals).forEach(arr => {
+          arr.forEach(i => total += i.calories);
+        });
+
+        summaryBar.textContent = `Today — ${total} calories`;
+
+        logView.innerHTML = buildMeals(meals);
+      });
+  }
+
+  function buildMeals(meals) {
+    const order = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+    let html = "";
+
+    order.forEach(meal => {
+      const items = meals[meal] || [];
+
+      html += `
+        <div class="meal-bar">${meal}</div>
+        <div class="meal-items">
+          ${items.map(i => `
+            <div class="meal-item">${i.name} — ${i.calories} cal</div>
+          `).join("")}
+        </div>
+      `;
+    });
+
+    html += `
+      <div style="padding:12px;">
+        <button id="addFoodBtn" style="
+          width:100%; padding:12px; font-size:16px;
+          background:#6a1b9a; color:white; border:none; border-radius:4px;
+        ">Add Food</button>
+
+        <button id="foodsBtn" style="
+          width:100%; padding:12px; margin-top:10px; font-size:16px;
+          background:#1976d2; color:white; border:none; border-radius:4px;
+        ">Foods</button>
+      </div>
+    `;
+
+    setTimeout(() => {
+      document.getElementById("addFoodBtn").onclick = () => show(addFoodView);
+      document.getElementById("foodsBtn").onclick = () => show(foodsView);
+    }, 0);
+
+    return html;
+  }
+
+  // ADD FOOD SEARCH
+  addFoodSearch.oninput = () => {
+    const q = addFoodSearch.value.trim();
+    if (!q) {
+      addFoodResults.innerHTML = "";
+      return;
+    }
+
+    db.collection("foods")
+      .orderBy("name")
+      .startAt(q)
+      .endAt(q + "\uf8ff")
+      .limit(20)
+      .get()
+      .then(snapshot => {
+        addFoodResults.innerHTML = snapshot.docs.map(doc => {
+          const f = doc.data();
+          return `
+            <div class="food-result" data-id="${doc.id}">
+              ${f.name} — ${f.calories} cal
+            </div>
+          `;
+        }).join("");
+
+        [...addFoodResults.children].forEach(el => {
+          el.onclick = () => addFoodToLog(el.dataset.id);
+        });
+      });
+  };
+
+  function addFoodToLog(id) {
+    if (submitLock) return;
+    submitLock = true;
+
+    const uid = auth.currentUser.uid;
+    const dateKey = fmt(currentDate);
+
+    db.collection("foods").doc(id).get().then(doc => {
+      const f = doc.data();
+
+      const dayRef = db.collection("logs").doc(uid).collection("days").doc(dateKey);
+
+      return dayRef.set({
+        meals: {
+          Snacks: firebase.firestore.FieldValue.arrayUnion({
+            name: f.name,
+            calories: f.calories
+          })
+        }
+      }, { merge: true });
+    })
+    .then(() => {
+      submitLock = false;
+      show(logView);
+      renderLog();
+    });
+  }
+
+  // FOODS SCREEN
+  foodsSearch.oninput = () => loadFoods();
+  function loadFoods() {
+    const q = foodsSearch.value.trim();
+
+    db.collection("foods")
+      .orderBy("name")
+      .startAt(q)
+      .endAt(q + "\uf8ff")
+      .limit(50)
+      .get()
+      .then(snapshot => {
+        foodsList.innerHTML = snapshot.docs.map(doc => {
+          const f = doc.data();
+          return `
+            <div class="food-result">
+              ${f.name} — ${f.calories} cal
+            </div>
+          `;
+        }).join("");
+      });
+  }
+
+  backFromAdd.onclick = () => show(logView);
+  backFromFoods.onclick = () => show(logView);
+});

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter v186</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="firebase-config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+
+<body class="bg-gray-100">
+
+  <!-- v185 HEADER (UNCHANGED) -->
+  <header class="bg-purple-600 text-white p-4 shadow">
+    <div class="text-xl font-bold">Today</div>
+    <div id="headerCalories" class="text-sm opacity-90">0 calories today</div>
+    <div id="headerDate" class="text-xs opacity-80 mt-1"></div>
+  </header>
+
+  <!-- SHABBAT BANNER -->
+  <div id="shabbatBanner" class="hidden bg-yellow-200 text-yellow-900 text-center py-1 text-xs font-semibold">
+    Shabbat Mode Active
+  </div>
+
+  <!-- MAIN VIEWS -->
+  <main class="p-3 pb-20">
+    <div id="logView" class="view active">
+      <div id="mealContainer" class="space-y-3"></div>
+    </div>
+
+    <div id="foodsView" class="view hidden">
+      <div class="p-2">
+        <input id="foodSearch" type="search" placeholder="Search foods..."
+          oninput="filterFoods()"
+          class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" />
+      </div>
+      <div id="foodResults" class="px-2 space-y-1"></div>
+    </div>
+
+    <div id="servingsView" class="view hidden">
+      <div id="servingsList" class="space-y-1 px-2"></div>
+    </div>
+  </main>
+
+  <!-- ADD FOOD MODAL -->
+  <div id="addFoodModal"
+       class="view fixed inset-0 bg-white z-40 flex flex-col hidden">
+
+    <div class="bg-purple-600 text-white p-3 flex items-center gap-2">
+      <button onclick="closeAddFood()" class="text-lg p-0.5">✕</button>
+      <h2 class="font-bold text-sm">Add Food to Log</h2>
+    </div>
+
+    <div class="flex gap-1.5 p-2 bg-gray-50 border-b">
+      <button onclick="pickMeal('breakfast')" id="mealBtn_breakfast"
+        class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-orange-200 bg-white text-orange-700">
+        ☕ Breakfast
+      </button>
+      <button onclick="pickMeal('lunch')" id="mealBtn_lunch"
+        class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-green-200 bg-white text-green-700">
+        🍴 Lunch
+      </button>
+      <button onclick="pickMeal('snack')" id="mealBtn_snack"
+        class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-yellow-200 bg-white text-yellow-700">
+        🍪 Snack
+      </button>
+      <button onclick="pickMeal('dinner')" id="mealBtn_dinner"
+        class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-blue-200 bg-white text-blue-700">
+        🍽 Dinner
+      </button>
+    </div>
+
+    <div class="p-2">
+      <div class="flex gap-1.5 items-center">
+        <input id="addFoodSearch" type="search" placeholder="Search foods..."
+          oninput="filterAddFoods()"
+          class="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" />
+        <button onclick="voiceInput('addFoodSearch', false, voiceFilterAddFoods)"
+          class="text-xl">🎤</button>
+      </div>
+    </div>
+
+    <div id="addFoodResults" class="flex-1 overflow-y-auto px-2 pb-2 space-y-1"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-inner flex justify-around py-2">
+    <button onclick="showView('logView')" class="text-center text-xs">
+      📘<br>Log
+    </button>
+    <button onclick="openAddFood('breakfast')" class="text-center text-xs">
+      ➕<br>Add
+    </button>
+    <button onclick="showView('foodsView')" class="text-center text-xs">
+      🍎<br>Foods
+    </button>
+  </nav>
+
+</body>
+</html>

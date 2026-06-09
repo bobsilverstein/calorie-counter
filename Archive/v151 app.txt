@@ -1,0 +1,279 @@
+// v151-merged APP.JS — CHUNK 1 OF 2
+// (backup.js fully merged)
+
+function hideAll() {
+  document.getElementById("logView").classList.add("hidden");
+  document.getElementById("mealsView").classList.add("hidden");
+  document.getElementById("foodsView").classList.add("hidden");
+}
+
+function showLog() {
+  hideAll();
+  document.getElementById("logView").classList.remove("hidden");
+  closeBackups();
+  loadLog(currentDate);
+}
+
+function showMeals() {
+  hideAll();
+  document.getElementById("mealsView").classList.remove("hidden");
+  closeBackups();
+  loadMealsForDate(currentDate);
+}
+
+function showFoods() {
+  hideAll();
+  document.getElementById("foodsView").classList.remove("hidden");
+  closeBackups();
+  searchFoods();
+}
+
+function openBackups() {
+  document.getElementById("backupsOverlay").classList.remove("hidden");
+  loadBackupList();
+}
+
+function closeBackups() {
+  document.getElementById("backupsOverlay").classList.add("hidden");
+}
+
+let currentDate = new Date().toISOString().slice(0,10);
+
+function prevDate() {
+  const d = new Date(currentDate);
+  d.setDate(d.getDate() - 1);
+  currentDate = d.toISOString().slice(0,10);
+  loadLog(currentDate);
+}
+
+function nextDate() {
+  const d = new Date(currentDate);
+  d.setDate(d.getDate() + 1);
+  currentDate = d.toISOString().slice(0,10);
+  loadLog(currentDate);
+}
+
+async function loadLog(dateStr) {
+  document.getElementById("currentDate").textContent = dateStr;
+
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(dateStr).collection("entries");
+  const snap = await ref.get();
+
+  const groups = { Breakfast:[], Lunch:[], Snack:[], Dinner:[] };
+  snap.forEach(doc => {
+    const d = doc.data();
+    if (groups[d.MealType]) groups[d.MealType].push(d);
+  });
+
+  renderMealBlocks(groups);
+}
+
+function renderMealBlocks(groups) {
+  const out = document.getElementById("mealBlocks");
+  out.innerHTML = "";
+
+  const order = ["Breakfast","Lunch","Snack","Dinner"];
+
+  order.forEach(type => {
+    const items = groups[type] || [];
+    const total = items.reduce((s,m)=>s + Math.round(m.TotalCalories), 0);
+
+    const div = document.createElement("div");
+    div.className = "mealBlock";
+    div.textContent = `${type} — ${total} cal`;
+    out.appendChild(div);
+  });
+
+  document.getElementById("totalCaloriesToday").textContent =
+    order.reduce((sum, type) =>
+      sum + groups[type].reduce((s,m)=>s + Math.round(m.TotalCalories), 0)
+    , 0);
+}
+
+async function loadMealsForDate(dateStr) {
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(dateStr).collection("entries");
+  const snap = await ref.get();
+
+  const groups = { Breakfast:[], Lunch:[], Snack:[], Dinner:[] };
+  snap.forEach(doc => {
+    const d = doc.data();
+    if (groups[d.MealType]) groups[d.MealType].push(d);
+  });
+
+  const out = document.getElementById("mealGroups");
+  out.innerHTML = "";
+
+  const order = ["Breakfast","Lunch","Snack","Dinner"];
+  order.forEach(type => {
+    const items = groups[type] || [];
+    if (!items.length) return;
+
+    const block = document.createElement("div");
+    block.innerHTML = `<h3>${type}</h3>`;
+
+    items.forEach(item => {
+      const calPerUnit = item.Unit.toLowerCase()==="piece" || item.Unit.toLowerCase()==="each"
+        ? Math.round(item.CaloriesPerUnit)
+        : Number(item.CaloriesPerUnit).toFixed(2);
+      const total = Math.round(item.TotalCalories);
+
+      const row = document.createElement("div");
+      row.textContent = `${item.Food} — ${item.ServingSize}${item.Unit} — ${calPerUnit} cal/unit — ${total} cal`;
+      block.appendChild(row);
+    });
+
+    out.appendChild(block);
+  });
+}
+// v151-merged APP.JS — CHUNK 2 OF 2
+// BACKUP SYSTEM MERGED HERE
+
+// --- BACKUP HELPERS ---
+function fsBackupPath(dateStr, timeStr) {
+  return `Backups/${dateStr}/${timeStr}.json`;
+}
+
+async function createBackupObject() {
+  const meals = await exportAllMeals();
+  const foods = await exportAllFoods();
+  return { meals, foods };
+}
+
+async function exportAllMeals() {
+  const db = firebase.firestore();
+  const out = [];
+  const snap = await db.collection("DailyLog").get();
+
+  for (const doc of snap.docs) {
+    const date = doc.id;
+    const entries = await doc.ref.collection("entries").get();
+    entries.forEach(e => out.push({ date, ...e.data() }));
+  }
+  return out;
+}
+
+async function exportAllFoods() {
+  const db = firebase.firestore();
+  const out = [];
+  const snap = await db.collection("Foods").get();
+  snap.forEach(doc => out.push({ id: doc.id, ...doc.data() }));
+  return out;
+}
+
+async function saveBackupToFirestore(backupObj) {
+  const db = firebase.firestore();
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0,10);
+  const timeStr = d.toTimeString().slice(0,8).replace(/:/g,"");
+  await db.doc(fsBackupPath(dateStr, timeStr)).set(backupObj);
+}
+
+function saveBackupLocal(backupObj) {
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0,10);
+  const timeStr = d.toTimeString().slice(0,8).replace(/:/g,"");
+  const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${dateStr}_${timeStr}.json`;
+  a.click();
+}
+
+async function autoBackup() {
+  const backupObj = await createBackupObject();
+  await saveBackupToFirestore(backupObj);
+  saveBackupLocal(backupObj);
+}
+
+// --- BACKUP UI ---
+async function loadBackupList() {
+  const out = document.getElementById("backupList");
+  out.innerHTML = "Loading…";
+
+  const fs = await listFirestoreBackups();
+
+  let html = "<h3>Firestore Backups</h3>";
+  if (fs.length === 0) html += "<div>No Firestore backups.</div>";
+
+  fs.sort((a,b)=>b.path.localeCompare(a.path));
+  fs.forEach(b => {
+    html += `
+      <div>
+        <strong>${b.path}</strong>
+        <button onclick='previewFSBackup("${b.path}")'>Preview</button>
+      </div>`;
+  });
+
+  out.innerHTML = html;
+}
+
+async function listFirestoreBackups() {
+  const db = firebase.firestore();
+  const out = [];
+  const days = await db.collection("Backups").get();
+
+  for (const day of days.docs) {
+    const sub = await day.ref.listCollections();
+    for (const col of sub) {
+      const docs = await col.get();
+      docs.forEach(d => out.push({ path: `${day.id}/${col.id}/${d.id}`, data: d.data() }));
+    }
+  }
+  return out;
+}
+
+async function previewFSBackup(path) {
+  const db = firebase.firestore();
+  const [day, timeFolder, file] = path.split("/");
+  const doc = await db.doc(`Backups/${day}/${timeFolder}/${file}`).get();
+  const data = doc.data();
+  renderBackupPreview(data);
+}
+
+function renderBackupPreview(backupObj) {
+  const out = document.getElementById("backupList");
+
+  let html = "<h3>Backup Preview</h3>";
+
+  html += "<h4>Meals</h4>";
+  backupObj.meals.forEach(m => {
+    html += `<div>${m.date} — ${m.MealType} — ${m.Food} — ${m.ServingSize}${m.Unit} — ${Math.round(m.TotalCalories)} cal</div>`;
+  });
+
+  html += "<h4>Foods</h4>";
+  backupObj.foods.forEach(f => {
+    const isPiece = f.Unit.toLowerCase()==="piece" || f.Unit.toLowerCase()==="each";
+    const cal = isPiece ? Math.round(f.CaloriesPerUnit) : Number(f.CaloriesPerUnit).toFixed(2);
+    html += `<div>${f.Name} — ${cal} cal/${f.Unit}</div>`;
+  });
+
+  html += `<button onclick='restoreBackupConfirm(${JSON.stringify(JSON.stringify(backupObj))})'>Restore</button>`;
+  html += `<button onclick='loadBackupList()'>Back</button>`;
+
+  out.innerHTML = html;
+}
+
+function restoreBackupConfirm(jsonStr) {
+  const obj = JSON.parse(jsonStr);
+  if (!confirm("Restore this backup?")) return;
+  restoreBackup(obj).then(()=>alert("Restore complete."));
+}
+
+async function restoreBackup(backupObj) {
+  const db = firebase.firestore();
+
+  for (const m of backupObj.meals) {
+    const ref = db.collection("DailyLog").doc(m.date).collection("entries").doc();
+    await ref.set(m);
+  }
+
+  for (const f of backupObj.foods) {
+    await db.collection("Foods").doc(f.id).set(f);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  showLog();
+});

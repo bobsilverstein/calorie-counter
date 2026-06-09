@@ -1,0 +1,383 @@
+// app.js — v120
+document.addEventListener("DOMContentLoaded", () => {
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const todayCaloriesEl = document.getElementById("todayCalories");
+  const mealListEl = document.getElementById("mealList");
+
+  const views = {
+    log: document.getElementById("view_log"),
+    foods: document.getElementById("view_foods"),
+    serving: document.getElementById("view_serving"),
+    addFood: document.getElementById("addFoodModal")
+  };
+
+  let currentUser = null;
+  let currentDayDocId = null;
+  let currentMealKey = "breakfast";
+  let foodsMaster = []; // {id, name, unit, calPerUnit, totalCalories}
+  let currentServing = null; // {id, mealKey, foodId, amount, unit, calPerUnit}
+  let isListening = false;
+
+  // ----- VIEW HELPERS -----
+  window.showView = function (name) {
+    Object.keys(views).forEach(k => {
+      if (k === name) views[k].classList.add("active");
+      else views[k].classList.remove("active");
+    });
+  };
+
+  // ----- AUTH + MEALS -----
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      currentUser = null;
+      mealListEl.innerHTML = "<div class='p-4 text-sm'>Please sign in.</div>";
+      return;
+    }
+    currentUser = user;
+    loadToday();
+    loadFoodsMaster();
+  });
+
+  function loadToday() {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    db.collection("users")
+      .doc(currentUser.uid)
+      .collection("days")
+      .doc(todayKey)
+      .onSnapshot(doc => {
+        if (!doc.exists) {
+          currentDayDocId = todayKey;
+          renderDay({
+            breakfast: [],
+            lunch: [],
+            snack: [],
+            dinner: [],
+            totalCalories: 0
+          });
+          return;
+        }
+        currentDayDocId = doc.id;
+        const data = doc.data();
+        renderDay(data);
+      });
+  }
+
+  function renderDay(day) {
+    const total = day.totalCalories || 0;
+    todayCaloriesEl.textContent = `${total} calories today`;
+
+    const sections = [
+      { key: "breakfast", label: "Breakfast", icon: "☕" },
+      { key: "lunch", label: "Lunch", icon: "🍴" },
+      { key: "snack", label: "Snack", icon: "🍪" },
+      { key: "dinner", label: "Dinner", icon: "🍽" }
+    ];
+
+    mealListEl.innerHTML = "";
+    sections.forEach(sec => {
+      const foods = day[sec.key] || [];
+      const mealCalories = foods.reduce((sum, f) => sum + (f.servingCalories || 0), 0);
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "px-4 py-3";
+
+      const header = document.createElement("div");
+      header.className = "flex items-center justify-between mb-1";
+      header.innerHTML = `
+        <div class="font-semibold text-sm">${sec.icon} ${sec.label}</div>
+        <div class="text-[11px] text-gray-500">${mealCalories} cal</div>
+      `;
+      wrapper.appendChild(header);
+
+      if (foods.length === 0) {
+        const add = document.createElement("button");
+        add.className = "mt-1 w-full text-left text-xs text-blue-600";
+        add.textContent = `+ add to ${sec.label.toLowerCase()}`;
+        add.onclick = () => {
+          currentMealKey = sec.key;
+          openAddFood();
+        };
+        wrapper.appendChild(add);
+      } else {
+        const list = document.createElement("div");
+        list.className = "space-y-1";
+        foods.forEach(serv => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "w-full flex items-center justify-between text-xs py-1 border-b border-gray-100";
+          row.onclick = () => openServingForEdit(sec.key, serv);
+          row.innerHTML = `
+            <div class="flex-1 min-w-0">
+              <div class="truncate font-semibold">${serv.foodName}</div>
+              <div class="text-[10px] text-gray-500">${serv.amount} ${serv.unit} · ${serv.servingCalories} cal</div>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+
+        const add = document.createElement("button");
+        add.className = "mt-1 w-full text-left text-xs text-blue-600";
+        add.textContent = `+ add to ${sec.label.toLowerCase()}`;
+        add.onclick = () => {
+          currentMealKey = sec.key;
+          openAddFood();
+        };
+
+        wrapper.appendChild(list);
+        wrapper.appendChild(add);
+      }
+
+      mealListEl.appendChild(wrapper);
+    });
+  }
+
+  function saveDayUpdate(dayData) {
+    const todayKey = currentDayDocId;
+    const total =
+      (dayData.breakfast || []).reduce((s, f) => s + (f.servingCalories || 0), 0) +
+      (dayData.lunch || []).reduce((s, f) => s + (f.servingCalories || 0), 0) +
+      (dayData.snack || []).reduce((s, f) => s + (f.servingCalories || 0), 0) +
+      (dayData.dinner || []).reduce((s, f) => s + (f.servingCalories || 0), 0);
+
+    dayData.totalCalories = total;
+
+    db.collection("users")
+      .doc(currentUser.uid)
+      .collection("days")
+      .doc(todayKey)
+      .set(dayData, { merge: true });
+  }
+
+  // ----- FOODS MASTER -----
+  function loadFoodsMaster() {
+    // assume foods stored in /users/{uid}/foods
+    db.collection("users")
+      .doc(currentUser.uid)
+      .collection("foods")
+      .orderBy("name")
+      .onSnapshot(snapshot => {
+        foodsMaster = [];
+        snapshot.forEach(doc => {
+          const f = doc.data();
+          foodsMaster.push({
+            id: doc.id,
+            name: f.name,
+            unit: f.unit || "g",
+            calPerUnit: f.calPerUnit || 0,
+            totalCalories: f.totalCalories || 0
+          });
+        });
+        renderFoodResults(foodsMaster);
+      });
+  }
+
+  function renderFoodResults(list) {
+    const container = document.getElementById("foodResults");
+    container.innerHTML = "";
+    list.forEach(f => {
+      const row = document.createElement("div");
+      row.className = "food-item flex items-center justify-between p-1.5 bg-white rounded border cursor-pointer hover:border-purple-300";
+      row.onclick = () => selectFood(f.id);
+      const perLabel = f.unit === "each" || f.unit === "slice" || f.unit === "each/serving"
+        ? `${f.calPerUnit} cal/each`
+        : `${f.calPerUnit} cal/g`;
+      row.innerHTML = `
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-sm truncate">${f.name}</div>
+          <div class="text-[10px] text-gray-400">${perLabel}</div>
+        </div>
+        <div class="text-gray-900 font-extrabold text-xs ml-2 whitespace-nowrap">${f.totalCalories || ""} cal</div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  window.filterFoods = function () {
+    const q = document.getElementById("foodSearch").value.toLowerCase().trim();
+    if (!q) {
+      renderFoodResults(foodsMaster);
+      return;
+    }
+    const filtered = foodsMaster.filter(f => f.name.toLowerCase().includes(q));
+    renderFoodResults(filtered);
+  };
+
+  function voiceFilterFoods() {
+    filterFoods();
+  }
+
+  // ----- ADD FOOD MODAL -----
+  window.openAddFood = function () {
+    showView("addFood");
+    highlightMealBtn();
+  };
+
+  window.closeAddFood = function () {
+    showView("log");
+  };
+
+  window.pickMeal = function (key) {
+    currentMealKey = key;
+    highlightMealBtn();
+  };
+
+  function highlightMealBtn() {
+    ["breakfast", "lunch", "snack", "dinner"].forEach(k => {
+      const btn = document.getElementById(`mealBtn_${k}`);
+      if (!btn) return;
+      if (k === currentMealKey) {
+        btn.classList.add("border-purple-400", "bg-purple-50");
+      } else {
+        btn.classList.remove("border-purple-400", "bg-purple-50");
+      }
+    });
+  }
+
+  window.selectFood = function (foodId) {
+    const food = foodsMaster.find(f => f.id === foodId);
+    if (!food) return;
+    currentServing = {
+      id: null,
+      mealKey: currentMealKey,
+      foodId: food.id,
+      foodName: food.name,
+      unit: food.unit || "g",
+      amount: 0,
+      calPerUnit: food.calPerUnit || 0,
+      servingCalories: 0
+    };
+    openServingScreen(false);
+  };
+
+  // ----- SERVING SCREEN -----
+  function openServingScreen(isEdit) {
+    document.getElementById("servingTitle").textContent = isEdit ? "Edit Serving" : "Add Serving";
+    document.getElementById("servingFoodName").textContent = currentServing.foodName || "—";
+    document.getElementById("servingUnit").value = currentServing.unit || "";
+    document.getElementById("servingAmount").value = currentServing.amount || "";
+    document.getElementById("calPerUnit").value = currentServing.calPerUnit || "";
+    document.getElementById("servingCalories").value = currentServing.servingCalories || "";
+
+    const label = document.getElementById("calPerUnitLabel");
+    if (currentServing.unit === "each" || currentServing.unit === "slice" || currentServing.unit === "each/serving") {
+      label.textContent = "Calories each";
+    } else {
+      label.textContent = "Calories per gram";
+    }
+
+    const delBtn = document.getElementById("deleteServingBtn");
+    if (isEdit) delBtn.classList.remove("hidden");
+    else delBtn.classList.add("hidden");
+
+    showView("serving");
+  }
+
+  window.openServingForEdit = function (mealKey, serv) {
+    currentMealKey = mealKey;
+    currentServing = { ...serv, mealKey };
+    openServingScreen(true);
+  };
+
+  window.closeServing = function () {
+    showView("log");
+  };
+
+  window.updateServingCalc = function () {
+    if (!currentServing) return;
+    const amt = parseFloat(document.getElementById("servingAmount").value) || 0;
+    currentServing.amount = amt;
+    const calPer = parseFloat(currentServing.calPerUnit) || 0;
+    const total = Math.round(amt * calPer);
+    currentServing.servingCalories = total;
+    document.getElementById("servingCalories").value = total;
+  };
+
+  window.saveServing = function () {
+    if (!currentServing || !currentDayDocId) return;
+
+    const amt = parseFloat(document.getElementById("servingAmount").value) || 0;
+    currentServing.amount = amt;
+    const calPer = parseFloat(currentServing.calPerUnit) || 0;
+    const total = Math.round(amt * calPer);
+    currentServing.servingCalories = total;
+    document.getElementById("servingCalories").value = total;
+
+    const todayKey = currentDayDocId;
+    const dayRef = db.collection("users").doc(currentUser.uid).collection("days").doc(todayKey);
+
+    dayRef.get().then(doc => {
+      const data = doc.exists
+        ? doc.data()
+        : { breakfast: [], lunch: [], snack: [], dinner: [], totalCalories: 0 };
+
+      const arr = data[currentMealKey] || [];
+      if (currentServing.id) {
+        const idx = arr.findIndex(s => s.id === currentServing.id);
+        if (idx >= 0) arr[idx] = { ...currentServing };
+      } else {
+        currentServing.id = dayRef.collection ? undefined : undefined; // id not needed for now
+        arr.push({ ...currentServing });
+      }
+      data[currentMealKey] = arr;
+      saveDayUpdate(data);
+      closeServing();
+    });
+  };
+
+  window.deleteServing = function () {
+    if (!currentServing || !currentServing.id || !currentDayDocId) {
+      closeServing();
+      return;
+    }
+    const todayKey = currentDayDocId;
+    const dayRef = db.collection("users").doc(currentUser.uid).collection("days").doc(todayKey);
+    dayRef.get().then(doc => {
+      if (!doc.exists) {
+        closeServing();
+        return;
+      }
+      const data = doc.data();
+      const arr = data[currentServing.mealKey] || [];
+      const filtered = arr.filter(s => s.id !== currentServing.id);
+      data[currentServing.mealKey] = filtered;
+      saveDayUpdate(data);
+      closeServing();
+    });
+  };
+
+  // ----- VOICE INPUT -----
+  window.voiceInput = function (inputId, append, callback) {
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) return;
+    if (isListening) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    isListening = true;
+    recognition.start();
+
+    recognition.onresult = event => {
+      const transcript = event.results[0][0].transcript;
+      if (append) input.value = (input.value + " " + transcript).trim();
+      else input.value = transcript;
+      if (typeof callback === "function") callback();
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+    };
+
+    recognition.onerror = () => {
+      isListening = false;
+    };
+  };
+});

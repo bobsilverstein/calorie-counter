@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calorie Counter v124</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="icon" href="data:," />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html { font-size: 120%; }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+
+<body class="bg-slate-100">
+  <div class="min-h-screen flex justify-center">
+    <div class="w-full max-w-md bg-white flex flex-col relative">
+
+      <!-- TOP -->
+      <div id="topBox"
+           class="text-white px-4 py-3 flex flex-col gap-2 rounded-t-2xl rounded-b-2xl shadow"
+           style="background-color:#1d4ed8">
+        <div class="flex items-center justify-between text-sm">
+          <button id="prevDay" class="px-2 py-1 rounded hover:bg-blue-500 text-2xl leading-none">&lt;</button>
+          <div class="flex flex-col items-center">
+            <div id="currentDateLabel" class="font-semibold text-sm"></div>
+          </div>
+          <button id="nextDay" class="px-2 py-1 rounded hover:bg-blue-500 text-2xl leading-none">&gt;</button>
+        </div>
+        <div class="text-center">
+          <div id="todayCalories" class="text-4xl font-bold">0</div>
+          <div class="text-xs opacity-90">calories today</div>
+        </div>
+      </div>
+
+      <!-- LOG VIEW -->
+      <div id="view-log" class="flex-1 p-3">
+        <div id="mealsContainer" class="space-y-3 max-h-[70vh] overflow-y-auto"></div>
+      </div>
+
+      <!-- MEALS VIEW -->
+      <div id="view-add" class="hidden flex-1 overflow-y-auto p-3 space-y-3">
+
+        <h2 class="text-lg font-semibold">Meals</h2>
+
+        <div>
+          <label class="text-xs text-slate-600">Search foods</label>
+          <input id="addSearchInput" class="w-full border rounded px-2 py-1 text-sm" placeholder="Search foods…" />
+          <div id="addSearchResults" class="mt-1 border rounded divide-y max-h-52 overflow-y-auto text-sm"></div>
+        </div>
+
+        <div id="mealsFields" class="space-y-2 text-xs text-slate-700">
+
+          <div>
+            <label>Food</label>
+            <input id="addFoodName"
+                   class="w-full border rounded px-2 py-1 text-sm bg-slate-50 cursor-not-allowed"
+                   readonly tabindex="-1" />
+          </div>
+
+          <div>
+            <label>Comment</label>
+            <input id="addComment"
+                   class="w-full border rounded px-2 py-1 text-sm bg-slate-50 cursor-not-allowed"
+                   readonly tabindex="-1" />
+          </div>
+
+          <div>
+            <label>Meal</label>
+            <div class="flex gap-1 mt-1" id="mealToggleGroup">
+              <button type="button" data-meal="breakfast"
+                      class="meal-toggle flex-1 text-xs font-semibold py-1.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-700">
+                Breakfast
+              </button>
+              <button type="button" data-meal="lunch"
+                      class="meal-toggle flex-1 text-xs font-semibold py-1.5 rounded-lg border border-slate-300 bg-white">
+                Lunch
+              </button>
+              <button type="button" data-meal="snack"
+                      class="meal-toggle flex-1 text-xs font-semibold py-1.5 rounded-lg border border-slate-300 bg-white">
+                Snack
+              </button>
+              <button type="button" data-meal="dinner"
+                      class="meal-toggle flex-1 text-xs font-semibold py-1.5 rounded-lg border border-slate-300 bg-white">
+                Dinner
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+
+            <div>
+              <label>Unit</label>
+              <select id="addUnit"
+                      class="w-full border rounded px-2 py-1 text-sm mt-1 bg-slate-50 cursor-not-allowed"
+                      disabled tabindex="-1">
+                <option value="g">grams</option>
+                <option value="each">each</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Calories per unit</label>
+              <input id="addCaloriesPerUnit" type="number" step="0.1"
+                     class="w-full border rounded px-2 py-1 text-sm mt-1 bg-slate-50 cursor-not-allowed"
+                     readonly tabindex="-1" />
+            </div>
+
+            <div id="servingAGroup">
+              <label id="labelServingA">Serving size part A</label>
+              <input id="addServingA" type="number" step="1"
+                     class="w-full border rounded px-2 py-1 text-sm mt-1" />
+            </div>
+
+            <div id="servingBGroup">
+              <label id="labelServingB">Serving size part B</label>
+              <input id="addServingB" type="number" step="1"
+                     class="w-full border rounded px-2 py-1 text-sm mt-1" />
+            </div>
+
+            <div id="servingSizeGroup">
+              <label id="addServingLabel">Total serving size in grams</label>
+              <input id="addServingSize" type="number" step="1" readonly
+                     class="w-full border rounded px-2 py-1 text-sm mt-1 bg-slate-50 cursor-not-allowed"
+                     tabindex="-1" />
+            </div>
+
+            <div>
+              <label>Resulting calories</label>
+              <input id="addResultCalories" type="number" readonly
+                     class="w-full border rounded px-2 py-1 text-sm mt-1 bg-slate-50 cursor-not-allowed"
+                     tabindex="-1" />
+            </div>
+
+          </div>
+
+          <div class="flex gap-2 mt-3">
+            <button id="clearServing"
+                    class="flex-1 border border-slate-300 text-slate-700 py-2 rounded text-sm font-semibold">
+              <span><u>C</u>lear</span>
+            </button>
+            <button id="addSave"
+                    class="flex-1 text-white py-2 rounded text-sm font-semibold"
+                    style="background-color:#1d4ed8">
+              <span><u>S</u>ave</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FOODS VIEW -->
+      <div id="view-foods" class="hidden flex-1 overflow-y-auto p-3 space-y-3">
+
+        <h2 class="text-lg font-semibold mb-1">Foods</h2>
+
+        <div class="flex items-center justify-between gap-2">
+          <input id="foodsSearchInput" class="flex-1 border rounded px-2 py-1 text-sm" placeholder="Search foods…" />
+          <label class="flex items-center gap-1 text-xs text-slate-700">
+            <input id="foodsArchivedCheckbox" type="checkbox" class="h-3 w-3" />
+            <span>Search archived</span>
+          </label>
+        </div>
+
+        <div id="foodsList" class="mt-2 border rounded divide-y max-h-40 overflow-y-auto text-sm"></div>
+
+        <div id="foodsFields" class="space-y-2 text-xs text-slate-700 mt-2">
+
+          <div>
+            <label>Food name</label>
+            <input id="foodsFoodName" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+
+          <div>
+            <label>Comment</label>
+            <input id="foodsComment" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+
+          <div>
+            <label>Unit</label>
+            <div class="flex gap-1 mt-1" id="foodsUnitToggleGroup">
+              <button type="button" data-unit="g"
+                      class="foods-unit-toggle flex-1 text-xs font-semibold py-1.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-700">
+                <u>G</u>rams
+              </button>
+              <button type="button" data-unit="each"
+                      class="foods-unit-toggle flex-1 text-xs font-semibold py-1.5 rounded-lg border border-slate-300 bg-white">
+                <u>E</u>ach
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label id="foodsCaloriesLabel">Calories per gram</label>
+            <input id="foodsCalories" type="number" step="0.1"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+
+          <div>
+            <label id="foodsServingLabel">Serving size in grams</label>
+            <input id="foodsServingSize" type="number" step="1"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+
+        </div>
+
+        <div class="flex gap-2 mt-3">
+          <button id="foodsArchiveBtn"
+                  class="flex-1 border border-slate-300 text-slate-700 py-2 rounded text-sm font-semibold">
+            <span><u>A</u>rchive</span>
+          </button>
+          <button id="foodsClearBtn"
+                  class="flex-1 border border-slate-300 text-slate-700 py-2 rounded text-sm font-semibold">
+            <span><u>C</u>lear</span>
+          </button>
+          <button id="foodsSaveBtn"
+                  class="flex-1 text-white py-2 rounded text-sm font-semibold"
+                  style="background-color:#1d4ed8">
+            <span><u>S</u>ave</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- VERSION -->
+      <div class="absolute left-0 right-0 bottom-20 text-center text-sm text-slate-500 font-semibold">
+        <span id="versionLabel">V 124</span>
+      </div>
+
+      <!-- NAV -->
+      <div class="fixed bottom-0 left-0 right-0 flex justify-center bg-transparent">
+        <div class="w-full max-w-md bg-white border-t border-slate-200 flex items-center justify-between px-8 py-2 text-xs">
+
+          <button id="navLog" class="flex flex-col items-center gap-0.5 text-slate-700">
+            <span class="text-lg">📊</span>
+            <span>Log</span>
+          </button>
+
+          <button id="navAdd" class="flex flex-col items-center gap-0.5 text-slate-700">
+            <span class="text-lg">🍱</span>
+            <span>Meals</span>
+          </button>
+
+          <button id="navFoods" class="flex flex-col items-center gap-0.5 text-slate-700">
+            <span class="text-lg">🍽️</span>
+            <span>Foods</span>
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #fafafa;
+  color: #222;
+}
+
+.header {
+  background: #6a1b9a;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-around;
+  background: #eee;
+  padding: 10px 0;
+}
+
+.nav button {
+  padding: 8px 14px;
+  font-size: 15px;
+  border: none;
+  background: #d1c4e9;
+  border-radius: 6px;
+}
+
+.view {
+  padding: 15px;
+}
+
+.hidden {
+  display: none;
+}
+
+.dateBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.addBtn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: #7e57c2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+#foodSearch {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+#foodResults div,
+#mealGroups div {
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modalContent {
+  background: white;
+  padding: 20px;
+  width: 300px;
+  border-radius: 8px;
+}
+
+.modalContent input,
+.modalContent select {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.closeBtn {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 20px;
+}

@@ -1,0 +1,139 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  const banner = document.getElementById("banner");
+  const todayBtn = document.getElementById("todayBtn");
+  const prevDay = document.getElementById("prevDay");
+  const nextDay = document.getElementById("nextDay");
+
+  const tefillinCheck = document.getElementById("tefillinCheck");
+  const tefillinComment = document.getElementById("tefillinComment");
+  const weightInput = document.getElementById("weightInput");
+  const exerciseInput = document.getElementById("exerciseInput");
+
+  const mealsDiv = document.getElementById("meals");
+
+  let currentDate = new Date();
+  currentDate.setHours(0,0,0,0);
+
+  /* ---------------- DATE HELPERS ---------------- */
+
+  function fmt(d) {
+    return d.toISOString().split("T")[0];
+  }
+
+  function loadDay() {
+    const uid = auth.currentUser.uid;
+    const day = fmt(currentDate);
+
+    db.collection("users").doc(uid).collection("days").doc(day).get()
+      .then(doc => {
+        const data = doc.exists ? doc.data() : {};
+
+        tefillinCheck.checked = data.tefillin || false;
+        tefillinComment.value = data.tefillinComment || "";
+        weightInput.value = data.weight || "";
+        exerciseInput.value = data.exercise || "";
+
+        const meals = data.meals || [];
+        renderMeals(meals);
+
+        updateBanner(meals);
+
+        todayBtn.style.display =
+          fmt(currentDate) === fmt(new Date()) ? "none" : "inline-block";
+      });
+  }
+
+  function saveDay() {
+    const uid = auth.currentUser.uid;
+    const day = fmt(currentDate);
+
+    const payload = {
+      tefillin: tefillinCheck.checked,
+      tefillinComment: tefillinComment.value.trim(),
+      weight: weightInput.value.trim(),
+      exercise: exerciseInput.value.trim(),
+      meals: collectMeals()
+    };
+
+    db.collection("users").doc(uid)
+      .collection("days").doc(day).set(payload, { merge: true });
+
+    saveBackup(uid, day, payload);
+  }
+
+  /* ---------------- BACKUP SYSTEM ---------------- */
+
+  function saveBackup(uid, day, payload) {
+    db.collection("users").doc(uid)
+      .collection("backups").doc(day).set(payload);
+  }
+
+  /* ---------------- MEALS ---------------- */
+
+  function renderMeals(meals) {
+    mealsDiv.innerHTML = "";
+    meals.forEach(m => {
+      const row = document.createElement("div");
+      row.className = "border rounded p-2 mb-2 bg-white";
+
+      row.innerHTML = `
+        <div class="font-bold">${m.name}</div>
+        <div>${m.calories} cal</div>
+      `;
+
+      mealsDiv.appendChild(row);
+    });
+  }
+
+  function collectMeals() {
+    const rows = mealsDiv.children;
+    const arr = [];
+    for (let r of rows) {
+      const name = r.children[0].innerText;
+      const cal = parseInt(r.children[1].innerText);
+      arr.push({ name, calories: cal });
+    }
+    return arr;
+  }
+
+  function updateBanner(meals) {
+    const total = meals.reduce((a,b) => a + b.calories, 0);
+    banner.textContent = `${total} calories today`;
+
+    if (total < 1800) banner.className = baseBanner("bg-blue-600");
+    else if (total < 2000) banner.className = baseBanner("bg-yellow-500");
+    else banner.className = baseBanner("bg-red-600");
+  }
+
+  function baseBanner(color) {
+    return `text-center text-white font-bold py-2 rounded mb-4 ${color}`;
+  }
+
+  /* ---------------- NAV ---------------- */
+
+  prevDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    loadDay();
+  };
+
+  nextDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    loadDay();
+  };
+
+  todayBtn.onclick = () => {
+    currentDate = new Date();
+    currentDate.setHours(0,0,0,0);
+    loadDay();
+  };
+
+  /* ---------------- AUTH ---------------- */
+
+  auth.onAuthStateChanged(user => {
+    if (!user) return;
+    loadDay();
+  });
+});

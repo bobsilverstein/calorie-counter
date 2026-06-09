@@ -1,0 +1,411 @@
+// v175 — shorter header, fixed height, empty tefillin/exercise on load,
+// weight defaults, clear buttons, Alt+C / Alt+S, mic for search + serving,
+// no unit buttons, simplified calories, clear search after select.
+
+document.addEventListener("DOMContentLoaded", () => {
+  const db = firebase.firestore();
+
+  // DOM
+  const viewLog = document.getElementById("view-log");
+  const viewAdd = document.getElementById("view-add");
+  const viewFoods = document.getElementById("view-foods");
+
+  const navLog = document.getElementById("navLog");
+  const navAdd = document.getElementById("navAdd");
+  const navFoods = document.getElementById("navFoods");
+
+  const dayLabel = document.getElementById("dayLabel");
+  const totalCalories = document.getElementById("totalCalories");
+  const mealsList = document.getElementById("mealsList");
+
+  const prevDay = document.getElementById("prevDay");
+  const nextDay = document.getElementById("nextDay");
+  const todayButton = document.getElementById("todayButton");
+
+  // Daily notes
+  const tefillinComment = document.getElementById("tefillinComment");
+  const tefillinMic = document.getElementById("tefillinMic");
+  const tefillinClear = document.getElementById("tefillinClear");
+
+  const weightValue = document.getElementById("weightValue");
+  const weightMic = document.getElementById("weightMic");
+  const weightClear = document.getElementById("weightClear");
+
+  const exerciseComment = document.getElementById("exerciseComment");
+  const exerciseMic = document.getElementById("exerciseMic");
+  const exerciseClear = document.getElementById("exerciseClear");
+
+  // Add view
+  const addSearch = document.getElementById("addSearch");
+  const addSearchMic = document.getElementById("addSearchMic");
+  const addResults = document.getElementById("addResults");
+  const addFoodName = document.getElementById("addFoodName");
+  const addComment = document.getElementById("addComment");
+  const addCalories = document.getElementById("addCalories");
+  const addServingSize = document.getElementById("addServingSize");
+  const addServingMic = document.getElementById("addServingMic");
+  const addClear = document.getElementById("addClear");
+  const addSave = document.getElementById("addSave");
+
+  // Foods view
+  const foodsSearch = document.getElementById("foodsSearch");
+  const foodsSearchMic = document.getElementById("foodsSearchMic");
+  const foodsList = document.getElementById("foodsList");
+  const foodsFoodName = document.getElementById("foodsFoodName");
+  const foodsComment = document.getElementById("foodsComment");
+  const foodsCalories = document.getElementById("foodsCalories");
+
+  const versionLabel = document.getElementById("versionLabel");
+
+  // VERSION
+  const ts = new Date();
+  versionLabel.textContent =
+    "v175 " +
+    (ts.getMonth() + 1).toString().padStart(2, "0") + "/" +
+    ts.getDate().toString().padStart(2, "0") + "/" +
+    ts.getFullYear() + " " +
+    ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // STATE
+  let currentDate = new Date();
+  let currentMeal = "breakfast";
+  let foodsCache = [];
+
+  const MEALS = ["breakfast", "lunch", "snack", "dinner"];
+  const dNamesFull = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
+
+  function formatDateKey(d) {
+    return d.toISOString().split("T")[0];
+  }
+
+  function isToday(d) {
+    return formatDateKey(d) === formatDateKey(new Date());
+  }
+
+  // HEADER DATE
+  function renderDate() {
+    const d = currentDate;
+    dayLabel.textContent =
+      `${dNamesFull[d.getDay()]}, ${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+
+    nextDay.classList.toggle("invisible", isToday(d));
+    todayButton.style.display = isToday(d) ? "none" : "inline-block";
+
+    loadDailyLog();
+    loadDailyNotes();
+  }
+
+  prevDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderDate();
+  };
+
+  nextDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    renderDate();
+  };
+
+  todayButton.onclick = () => {
+    currentDate = new Date();
+    renderDate();
+  };
+
+  // NAV
+  function showView(v) {
+    viewLog.classList.add("hidden");
+    viewAdd.classList.add("hidden");
+    viewFoods.classList.add("hidden");
+    if (v === "log") viewLog.classList.remove("hidden");
+    if (v === "add") viewAdd.classList.remove("hidden");
+    if (v === "foods") viewFoods.classList.remove("hidden");
+  }
+
+  function pushView(v) {
+    history.pushState({ view: v }, "");
+    showView(v);
+  }
+
+  window.onpopstate = () => {
+    const v = history.state?.view || "log";
+    showView(v);
+  };
+
+  navLog.onclick = () => pushView("log");
+  navAdd.onclick = () => pushView("add");
+  navFoods.onclick = () => pushView("foods");
+
+  // MIC
+  function mic(target) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = "en-US";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onresult = e => {
+      target.value = e.results[0][0].transcript;
+      target.dispatchEvent(new Event("blur"));
+    };
+    r.start();
+  }
+
+  tefillinMic.onclick = () => mic(tefillinComment);
+  weightMic.onclick = () => mic(weightValue);
+  exerciseMic.onclick = () => mic(exerciseComment);
+  addSearchMic.onclick = () => mic(addSearch);
+  addServingMic.onclick = () => mic(addServingSize);
+  foodsSearchMic.onclick = () => mic(foodsSearch);
+
+  // CLEAR BUTTONS
+  tefillinClear.onclick = () => { tefillinComment.value = ""; saveDailyNotes(); };
+  weightClear.onclick = () => { weightValue.value = ""; saveDailyNotes(); };
+  exerciseClear.onclick = () => { exerciseComment.value = ""; saveDailyNotes(); };
+
+  addClear.onclick = () => {
+    addFoodName.value = "";
+    addComment.value = "";
+    addCalories.value = "";
+    addServingSize.value = "";
+    addSearch.value = "";
+    addResults.innerHTML = "";
+  };
+
+  // ALT SHORTCUTS
+  document.addEventListener("keydown", e => {
+    if (e.altKey && e.code === "KeyC") addClear.click();
+    if (e.altKey && e.code === "KeyS") addSave.click();
+  });
+
+  // LOAD FOODS
+  function loadFoods() {
+    db.collection("Foods").onSnapshot(snap => {
+      foodsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFoodsList();
+    });
+  }
+
+  function match(f, q) {
+    return (
+      (f.Food || "").toLowerCase().includes(q) ||
+      (f.Comment || "").toLowerCase().includes(q)
+    );
+  }
+
+  function renderFoodsList() {
+    const q = foodsSearch.value.toLowerCase();
+    foodsList.innerHTML = "";
+
+    foodsCache
+      .filter(f => match(f, q))
+      .forEach(f => {
+        const b = document.createElement("button");
+        b.className = "w-full text-left p-2 border-b border-blue-200";
+        b.innerHTML = `
+          <div class="font-medium">${f.Food}</div>
+          <div class="text-sm text-blue-700">
+          ${f.CaloriesPerServing} cal/${f.Unit}
+        </div>
+      `;
+      b.onclick = () => loadFoodIntoEditor(f);
+      foodsList.appendChild(b);
+    });
+  }
+
+  foodsSearch.oninput = renderFoodsList;
+
+  function loadFoodIntoEditor(f) {
+    foodsFoodName.value = f.Food;
+    foodsComment.value = f.Comment || "";
+    foodsCalories.value = f.CaloriesPerServing;
+  }
+
+  // ADD SEARCH
+  addSearch.oninput = () => {
+    const q = addSearch.value.toLowerCase();
+    addResults.innerHTML = "";
+
+    foodsCache
+      .filter(f => match(f, q))
+      .forEach(f => {
+        const b = document.createElement("button");
+        b.className = "w-full text-left p-2 border-b border-blue-200";
+        b.innerHTML = `
+          <div class="font-medium">${f.Food}</div>
+          <div class="text-sm text-blue-700">${f.CaloriesPerServing} cal/${f.Unit}</div>
+        `;
+        b.onclick = () => {
+          addFoodName.value = f.Food;
+          addComment.value = f.Comment || "";
+          addCalories.value = f.CaloriesPerServing;
+          addServingSize.value = "";
+          addSearch.value = "";
+          addResults.innerHTML = "";
+        };
+        addResults.appendChild(b);
+      });
+  };
+
+  // SAVE ENTRY
+  addSave.onclick = async () => {
+    const name = addFoodName.value.trim();
+    if (!name) return;
+
+    const calPer = Number(addCalories.value) || 0;
+    const serving = Number(addServingSize.value) || 0;
+    const total = calPer * serving;
+
+    const entry = {
+      Food: name,
+      Comment: addComment.value.trim(),
+      CaloriesPerServing: calPer,
+      ServingSize: serving,
+      TotalCalories: total,
+      Timestamp: Date.now()
+    };
+
+    const dateKey = formatDateKey(currentDate);
+
+    await db
+      .collection("Logs")
+      .doc(dateKey)
+      .collection(currentMeal)
+      .add(entry);
+
+    pushView("log");
+    loadDailyLog();
+  };
+
+  // DAILY NOTES
+  async function loadDailyNotes() {
+    try {
+      const dateKey = formatDateKey(currentDate);
+      const snap = await db.collection("DailyNotes").doc(dateKey).get();
+      const data = snap.exists ? snap.data() : {};
+
+      // empty on load
+      tefillinComment.value = "";
+      exerciseComment.value = "";
+
+      // weight defaults
+      weightValue.value = data.WeightValue != null ? data.WeightValue : "";
+    } catch (e) {}
+  }
+
+  async function saveDailyNotes() {
+    try {
+      const dateKey = formatDateKey(currentDate);
+      await db.collection("DailyNotes").doc(dateKey).set(
+        {
+          TefillinComment: tefillinComment.value.trim(),
+          WeightValue:
+            weightValue.value === "" ? null : Number(weightValue.value),
+          ExerciseComment: exerciseComment.value.trim(),
+          Timestamp: Date.now()
+        },
+        { merge: true }
+      );
+    } catch (e) {}
+  }
+
+  tefillinComment.onblur = saveDailyNotes;
+  weightValue.onblur = saveDailyNotes;
+  exerciseComment.onblur = saveDailyNotes;
+
+  // LOAD DAILY LOG
+  async function loadDailyLog() {
+    const dateKey = formatDateKey(currentDate);
+    mealsList.innerHTML = "";
+    let total = 0;
+
+    for (const meal of MEALS) {
+      const snap = await db
+        .collection("Logs")
+        .doc(dateKey)
+        .collection(meal)
+        .orderBy("Timestamp")
+        .get();
+
+      const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const mealTotal = entries.reduce(
+        (sum, e) => sum + Number(e.TotalCalories || 0),
+        0
+      );
+      total += mealTotal;
+
+      const sec = document.createElement("div");
+      sec.className = "border border-blue-300 rounded p-2";
+
+      const head = document.createElement("div");
+      head.className = "flex justify-between items-center";
+      head.innerHTML = `
+        <div class="font-semibold text-blue-700">${meal}</div>
+        <div class="text-sm text-blue-700">${mealTotal} cal</div>
+      `;
+
+      const body = document.createElement("div");
+      body.className = "mt-2 space-y-2";
+
+      entries.forEach(e => {
+        const row = document.createElement("div");
+        row.className = "border-b border-blue-200 pb-1";
+        row.innerHTML = `
+          <div class="font-medium">${e.Food}</div>
+          <div class="text-sm text-blue-700">
+            ${e.Comment || ""}
+          </div>
+          <div class="text-sm text-blue-700">
+            ${e.CaloriesPerServing} cal/unit • serving ${e.ServingSize}
+          </div>
+          <div class="text-sm font-bold text-blue-700">
+            ${e.TotalCalories} cal
+          </div>
+        `;
+        body.appendChild(row);
+      });
+
+      head.onclick = () => {
+        pushView("add");
+        currentMeal = meal;
+        document.querySelectorAll(".meal-toggle").forEach(b => {
+          b.style.backgroundColor = "white";
+          if (b.dataset.meal === meal) b.style.backgroundColor = "#dbeafe";
+        });
+      };
+
+      sec.appendChild(head);
+      sec.appendChild(body);
+      mealsList.appendChild(sec);
+    }
+
+    totalCalories.textContent = `${total} calories`;
+
+    const banner = document.querySelector("div[style*='height:110px']");
+    if (banner) {
+      banner.style.backgroundColor =
+        total >= 2000 ? "#dc2626" : total >= 1800 ? "#facc15" : "#1d4ed8";
+    }
+  }
+
+  // MOST RECENT WEIGHT
+  async function loadMostRecentWeight() {
+    const snap = await db.collection("DailyNotes")
+      .orderBy("Timestamp", "desc")
+      .limit(1)
+      .get();
+
+    if (!snap.empty) {
+      const w = snap.docs[0].data().WeightValue;
+      if (w != null) weightValue.value = w;
+    }
+  }
+
+  // INIT
+  pushView("log");
+  loadFoods();
+  renderDate();
+  loadMostRecentWeight();
+});

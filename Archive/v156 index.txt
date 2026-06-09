@@ -1,0 +1,95 @@
+<!-- index.html — v156 unified -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Calorie Counter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="appContainer">
+
+  <!-- HEADER -->
+  <div id="header">
+    <button onclick="changeDay(-1)">◀</button>
+    <div id="dateDisplay"></div>
+    <button onclick="changeDay(1)">▶</button>
+  </div>
+
+  <!-- LOG VIEW -->
+  <div id="logView" class="view">
+    <div id="caloriesToday"></div>
+
+    <div class="mealSection" id="BreakfastSection">
+      <div class="mealHeader">
+        <span>Breakfast</span>
+        <span id="BreakfastTotal">0 cal</span>
+      </div>
+      <div class="mealFoods" id="BreakfastFoods"></div>
+      <button class="addLink" onclick="addFoodToMeal('Breakfast')">Add breakfast</button>
+    </div>
+
+    <div class="mealSection" id="LunchSection">
+      <div class="mealHeader">
+        <span>Lunch</span>
+        <span id="LunchTotal">0 cal</span>
+      </div>
+      <div class="mealFoods" id="LunchFoods"></div>
+      <button class="addLink" onclick="addFoodToMeal('Lunch')">Add lunch</button>
+    </div>
+
+    <div class="mealSection" id="SnackSection">
+      <div class="mealHeader">
+        <span>Snack</span>
+        <span id="SnackTotal">0 cal</span>
+      </div>
+      <div class="mealFoods" id="SnackFoods"></div>
+      <button class="addLink" onclick="addFoodToMeal('Snack')">Add snack</button>
+    </div>
+
+    <div class="mealSection" id="DinnerSection">
+      <div class="mealHeader">
+        <span>Dinner</span>
+        <span id="DinnerTotal">0 cal</span>
+      </div>
+      <div class="mealFoods" id="DinnerFoods"></div>
+      <button class="addLink" onclick="addFoodToMeal('Dinner')">Add dinner</button>
+    </div>
+  </div>
+
+  <!-- MEALS VIEW -->
+  <div id="mealsView" class="view hidden">
+    <h2 class="sectionTitle">Meals</h2>
+    <div id="mealsList"></div>
+    <button class="primaryBtn" onclick="addMealTemplate()">Add meal template</button>
+  </div>
+
+  <!-- FOODS VIEW -->
+  <div id="foodsView" class="view hidden">
+    <h2 class="sectionTitle">Foods</h2>
+    <div class="foodsControls">
+      <input id="foodSearchInput" placeholder="Search foods…" oninput="searchFoods()" />
+      <button class="primaryBtn" onclick="addFoodItem()">Add food</button>
+    </div>
+    <div id="foodsList"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div id="bottomNav">
+    <button id="tabLog"   onclick="showLogView()">🏠 Log</button>
+    <button id="tabMeals" onclick="showMealsView()">🍽 Meals</button>
+    <button id="tabFoods" onclick="showFoodsView()">🗂 Foods</button>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script defer src="firebase-config.js"></script>
+<script defer src="app.js"></script>
+
+</body>
+</html>

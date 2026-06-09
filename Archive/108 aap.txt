@@ -1,0 +1,206 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let currentDate = new Date();
+  let searchMemory = "";
+
+  const viewContainer = document.getElementById("viewContainer");
+  const currentDateEl = document.getElementById("currentDate");
+
+  const navLog = document.getElementById("navLog");
+  const navAdd = document.getElementById("navAdd");
+  const navFoods = document.getElementById("navFoods");
+
+  const addFoodModal = document.getElementById("addFoodModal");
+  const closeAddFood = document.getElementById("closeAddFood");
+  const foodSearch = document.getElementById("foodSearch");
+  const foodResults = document.getElementById("foodResults");
+
+  let submitLock = false;
+
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      viewContainer.innerHTML = "<p class='p-4'>Please sign in.</p>";
+      return;
+    }
+    renderLogView();
+  });
+
+  // DATE HANDLING
+  function formatDate(d) {
+    return d.toISOString().split("T")[0];
+  }
+
+  function updateDateDisplay() {
+    currentDateEl.textContent = currentDate.toDateString();
+  }
+
+  document.getElementById("prevDay").onclick = () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderLogView();
+  };
+
+  document.getElementById("nextDay").onclick = () => {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const next = new Date(currentDate);
+    next.setDate(next.getDate() + 1);
+
+    if (next <= today) {
+      currentDate = next;
+      renderLogView();
+    }
+  };
+
+  // NAVIGATION
+  navLog.onclick = () => renderLogView();
+  navAdd.onclick = () => openAddFoodModal();
+  navFoods.onclick = () => renderFoodsView();
+
+  // LOG VIEW
+  function renderLogView() {
+    updateDateDisplay();
+    viewContainer.innerHTML = "<p class='p-4 text-gray-500'>Loading...</p>";
+
+    const uid = auth.currentUser.uid;
+    const dateKey = formatDate(currentDate);
+
+    db.collection("logs").doc(uid).collection("days").doc(dateKey).get()
+      .then(doc => {
+        const data = doc.exists ? doc.data() : { meals: {} };
+        renderMeals(data.meals || {});
+      });
+  }
+
+  function renderMeals(meals) {
+    let html = "";
+
+    const mealOrder = ["Breakfast", "Lunch", "Dinner", "Snacks"];
+
+    mealOrder.forEach(meal => {
+      const items = meals[meal] || [];
+
+      html += `
+        <div class="border-b">
+          <button class="w-full text-left p-4 font-bold">${meal}</button>
+          <div class="pl-4 pb-2 space-y-1">
+            ${items.map(i => `<div>${i.name} — ${i.calories} cal</div>`).join("")}
+          </div>
+        </div>
+      `;
+    });
+
+    viewContainer.innerHTML = html;
+  }
+
+  // FOODS VIEW
+  function renderFoodsView() {
+    viewContainer.innerHTML = `
+      <div class="p-4">
+        <input id="foodsSearch" class="w-full p-2 border rounded" placeholder="Search foods..." value="${searchMemory}">
+        <div id="foodsList" class="mt-4 space-y-2"></div>
+      </div>
+    `;
+
+    const foodsSearch = document.getElementById("foodsSearch");
+    const foodsList = document.getElementById("foodsList");
+
+    foodsSearch.oninput = () => {
+      searchMemory = foodsSearch.value;
+      loadFoods(searchMemory);
+    };
+
+    loadFoods(searchMemory);
+
+    function loadFoods(query) {
+      foodsList.innerHTML = "<p class='text-gray-500'>Loading...</p>";
+
+      db.collection("foods")
+        .orderBy("name")
+        .startAt(query)
+        .endAt(query + "\uf8ff")
+        .limit(50)
+        .get()
+        .then(snapshot => {
+          foodsList.innerHTML = snapshot.docs
+            .map(doc => {
+              const f = doc.data();
+              return `<div class="p-2 border rounded">${f.name} — ${f.calories} cal</div>`;
+            })
+            .join("");
+        });
+    }
+  }
+
+  // ADD FOOD MODAL
+  function openAddFoodModal() {
+    addFoodModal.classList.remove("hidden");
+    foodSearch.value = "";
+    foodResults.innerHTML = "";
+  }
+
+  closeAddFood.onclick = () => {
+    addFoodModal.classList.add("hidden");
+  };
+
+  foodSearch.oninput = () => {
+    const q = foodSearch.value.trim();
+    if (!q) {
+      foodResults.innerHTML = "";
+      return;
+    }
+
+    db.collection("foods")
+      .orderBy("name")
+      .startAt(q)
+      .endAt(q + "\uf8ff")
+      .limit(20)
+      .get()
+      .then(snapshot => {
+        foodResults.innerHTML = snapshot.docs
+          .map(doc => {
+            const f = doc.data();
+            return `
+              <button class="block w-full text-left p-2 border-b" data-id="${doc.id}">
+                ${f.name} — ${f.calories} cal
+              </button>
+            `;
+          })
+          .join("");
+
+        [...foodResults.children].forEach(btn => {
+          btn.onclick = () => addFoodToLog(btn.dataset.id);
+        });
+      });
+  };
+
+  function addFoodToLog(foodId) {
+    if (submitLock) return;
+    submitLock = true;
+
+    const uid = auth.currentUser.uid;
+    const dateKey = formatDate(currentDate);
+
+    db.collection("foods").doc(foodId).get().then(doc => {
+      const food = doc.data();
+
+      const dayRef = db.collection("logs").doc(uid).collection("days").doc(dateKey);
+
+      return dayRef.set({
+        meals: {
+          Snacks: firebase.firestore.FieldValue.arrayUnion({
+            name: food.name,
+            calories: food.calories
+          })
+        }
+      }, { merge: true });
+    })
+    .then(() => {
+      submitLock = false;
+      addFoodModal.classList.add("hidden");
+      renderLogView();
+    });
+  }
+});

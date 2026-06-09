@@ -1,0 +1,84 @@
+<!-- START v189 INDEX -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calorie Counter</title>
+  <link rel="stylesheet" href="https://cdn.tailwindcss.com">
+</head>
+
+<body class="bg-white text-slate-900 text-base font-semibold overflow-x-hidden overflow-y-auto">
+
+  <!-- DATE HEADER -->
+  <div class="p-3 bg-purple-600 text-white flex justify-between items-center">
+    <button id="prevDay">◀</button>
+    <div class="text-center">
+      <div id="dayName"></div>
+      <div id="dayDate"></div>
+    </div>
+
+    <button id="nextDay">▶</button>
+<button id="todayButton" class="ml-2 text-blue-700 text-sm">Today</button>
+
+  </div>
+
+  <!-- SHABBAT INFO -->
+  <div id="shabbatInfo" class="hidden p-2 bg-yellow-50 border-b space-y-1">
+    <div id="shabbatCandles" class="text-sm"></div>
+    <div id="shabbatParsha" class="text-sm"></div>
+    <button id="openLocation" class="text-blue-700 underline text-xs">Change location</button>
+  </div>
+
+  <!-- TOTAL -->
+<div class="p-3 text-center font-bold text-xl" id="totalCalories"></div>
+
+<input id="tefillinCheckbox" type="checkbox" class="hidden">
+<input id="tefillinComment" type="text" class="hidden">
+<button id="tefillinClear" class="hidden"></button>
+<button id="tefillinMic" class="hidden"></button>
+
+<input id="exerciseComment" type="text" class="hidden">
+
+<input id="weightValue" type="text" class="hidden">
+
+
+<button id="logSave" class="hidden"></button>
+
+<!-- MEALS -->
+
+  <div id="mealsList" class="p-2 space-y-3"></div>
+
+  <!-- BOTTOM NAV -->
+  <div class="fixed bottom-0 left-0 right-0 border-t border-blue-300 bg-white flex justify-around py-2 text-xs">
+    <button id="navLog" class="text-blue-700">Log</button>
+    <button id="navAdd" class="text-blue-700">Add</button>
+    <button id="navFoods" class="text-blue-700">Foods</button>
+  </div>
+
+  <!-- LOCATION MODAL -->
+  <div id="locationModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-4 w-72 space-y-3">
+      <div class="flex justify-between items-center">
+        <div class="font-bold text-sm">Set Location</div>
+        <button id="locationClose" class="text-lg">✕</button>
+      </div>
+      <input id="locationInput" class="w-full border rounded px-2 py-1 text-sm"
+             placeholder="City, ZIP, or lat,lng">
+      <button id="locationSave"
+              class="w-full bg-blue-600 text-white rounded py-1 text-sm font-semibold">
+        Save
+      </button>
+    </div>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script src="firebase-config.js"></script>
+  <script src="app.js?v=9999"></script>
+
+</body>
+</html>
+<!-- END v189 INDEX -->

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <title>Calorie Counter v161</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script defer src="firebase-config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+
+<body class="bg-gray-100 text-[150%]">
+  <div id="app" class="max-w-[480px] mx-auto p-4">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-4">
+      <button id="prevDay" class="text-3xl">◀</button>
+      <button id="todayBtn" class="px-3 py-1 bg-purple-600 text-white rounded">Today</button>
+      <button id="nextDay" class="text-3xl">▶</button>
+    </div>
+
+    <div id="banner" class="text-center text-white font-bold py-2 rounded mb-4 bg-blue-600">
+      0 calories today
+    </div>
+
+    <!-- DAILY NOTES -->
+    <div class="space-y-3 mb-6">
+
+      <div class="flex items-center gap-3">
+        <img src="tefillin.png" class="w-8 h-8" />
+        <input id="tefillinCheck" type="checkbox" class="w-6 h-6" />
+        <input id="tefillinComment" type="text" placeholder="Comment"
+               class="flex-1 border rounded px-2 py-1" />
+      </div>
+
+      <div class="flex items-center gap-3">
+        <img src="weight.png" class="w-8 h-8" />
+        <input id="weightInput" type="number" step="0.1" placeholder="lbs"
+               class="w-28 border rounded px-2 py-1" />
+      </div>
+
+      <div class="flex items-center gap-3">
+        <img src="exercise.png" class="w-8 h-8" />
+        <input id="exerciseInput" type="text" placeholder="Exercise"
+               class="flex-1 border rounded px-2 py-1" />
+      </div>
+
+    </div>
+
+    <!-- MEALS -->
+    <div id="meals"></div>
+
+    <!-- NAV -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
+      <div class="max-w-[480px] mx-auto flex justify-around text-3xl">
+        <button id="navLog">📊</button>
+        <button id="navAdd" class="text-purple-600">＋</button>
+        <button id="navFoods">⚙️</button>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

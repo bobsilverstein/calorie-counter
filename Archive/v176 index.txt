@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>v176</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-white text-slate-900 text-base font-semibold">
+
+<div class="max-w-sm mx-auto min-h-screen rounded-2xl border border-blue-700 overflow-hidden flex flex-col">
+
+  <!-- HEADER (fixed height, date centered vertically) -->
+  <div class="rounded-2xl flex flex-col items-center justify-center"
+       style="background:#1d4ed8; color:white; height:110px;">
+
+    <div class="flex justify-between w-full px-4">
+      <button id="prevDay" class="text-xl font-bold">◀</button>
+      <button id="nextDay" class="text-xl font-bold">▶</button>
+    </div>
+
+    <div id="dayLabel" class="text-base font-bold leading-tight mt-1"
+         style="transform:scale(1.2);"></div>
+
+    <div id="totalCalories" class="text-sm font-bold"
+         style="transform:scale(1.2);">0 calories</div>
+
+    <div class="w-full flex justify-end px-4">
+      <button id="todayButton"
+        class="px-2 py-0.5 rounded text-xs font-bold bg-white text-blue-700">
+        Today
+      </button>
+    </div>
+  </div>
+
+  <!-- LOG VIEW -->
+  <div id="view-log" class="view flex-1 overflow-y-auto p-3 space-y-3">
+
+    <!-- DAILY NOTES -->
+    <div class="space-y-2">
+
+      <!-- Tefillin -->
+      <div class="flex items-center gap-2 border border-blue-300 rounded px-2 py-1 text-xs bg-blue-50">
+        <span class="flex-1">Tefillin</span>
+        <input id="tefillinComment"
+               class="flex-1 border border-blue-300 rounded px-2 py-1 text-xs bg-white"
+               placeholder="Comment" />
+        <button id="tefillinMic" class="text-lg px-1">🎤</button>
+        <button id="tefillinClear" class="text-lg px-1">✕</button>
+      </div>
+
+      <!-- Weight -->
+      <div class="flex items-center gap-2 border border-blue-300 rounded px-2 py-1 text-xs bg-blue-50">
+        <span>Weight</span>
+        <input id="weightValue" type="number" step="0.1"
+               class="flex-1 border border-blue-300 rounded px-2 py-1 text-xs bg-white"
+               placeholder="0.0 lb" />
+        <button id="weightMic" class="text-lg px-1">🎤</button>
+        <button id="weightClear" class="text-lg px-1">✕</button>
+      </div>
+
+      <!-- Exercise -->
+      <div class="flex items-center gap-2 border border-blue-300 rounded px-2 py-1 text-xs bg-blue-50">
+        <span>Exercise</span>
+        <input id="exerciseComment"
+               class="flex-1 border border-blue-300 rounded px-2 py-1 text-xs bg-white"
+               placeholder="Exercise notes" />
+        <button id="exerciseMic" class="text-lg px-1">🎤</button>
+        <button id="exerciseClear" class="text-lg px-1">✕</button>
+      </div>
+
+    </div>
+
+    <!-- LOG CLEAR/SAVE -->
+    <div class="flex gap-2">
+      <button id="logClear"
+              class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold">
+        Clear (Alt+C)
+      </button>
+      <button id="logSave"
+              class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">
+        Save (Alt+S)
+      </button>
+    </div>
+
+    <div id="mealsList" class="space-y-3"></div>
+  </div>
+
+  <!-- ADD VIEW -->
+  <div id="view-add" class="view hidden flex-1 overflow-y-auto p-3 space-y-3">
+
+    <div class="flex gap-1.5">
+      <button class="meal-toggle flex-1 py-1.5 rounded-lg border border-blue-300 text-sm font-semibold"
+              data-meal="breakfast">Breakfast</button>
+      <button class="meal-toggle flex-1 py-1.5 rounded-lg border border-blue-300 text-sm font-semibold"
+              data-meal="lunch">Lunch</button>
+      <button class="meal-toggle flex-1 py-1.5 rounded-lg border border-blue-300 text-sm font-semibold"
+              data-meal="snack">Snack</button>
+      <button class="meal-toggle flex-1 py-1.5 rounded-lg border border-blue-300 text-sm font-semibold"
+              data-meal="dinner">Dinner</button>
+    </div>
+
+    <div class="flex items-center gap-1">
+      <input id="addSearch" type="search" placeholder="Search foods..."
+             class="flex-1 border border-blue-300 rounded px-2 py-1 text-sm" />
+      <button id="addSearchMic" class="text-lg px-1">🎤</button>
+    </div>
+
+    <div id="addResults" class="space-y-1 max-h-60 overflow-y-auto"></div>
+
+    <div id="addFields" class="space-y-2 text-xs text-slate-700">
+
+      <div>
+        <label>Food</label>
+        <input id="addFoodName"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+      </div>
+
+      <div>
+        <label>Comment</label>
+        <input id="addComment"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+      </div>
+
+      <div>
+        <label id="addCalLabel">Calories per gram</label>
+        <input id="addCalories"
+               type="number" step="0.1"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+      </div>
+
+      <div>
+        <label>Serving size</label>
+        <div class="flex items-center gap-1">
+          <input id="addServingSize"
+                 type="number" step="0.1"
+                 class="flex-1 border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+          <button id="addServingMic" class="text-lg px-1">🎤</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex gap-2">
+      <button id="addClear"
+              class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold">
+        Clear (Alt+C)
+      </button>
+      <button id="addSave"
+              class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">
+        Save (Alt+S)
+      </button>
+    </div>
+
+    <div class="h-20"></div>
+  </div>
+
+  <!-- FOODS VIEW -->
+  <div id="view-foods" class="view hidden flex-1 overflow-y-auto p-3 space-y-3">
+
+    <div class="flex items-center gap-1">
+      <input id="foodsSearch" type="search" placeholder="Search foods..."
+             class="flex-1 border border-blue-300 rounded px-2 py-1 text-sm" />
+      <button id="foodsSearchMic" class="text-lg px-1">🎤</button>
+    </div>
+
+    <div id="foodsList"
+         class="mt-2 border border-blue-300 rounded divide-y max-h-40 overflow-y-auto text-sm"></div>
+
+    <div id="foodsFields" class="space-y-2 text-xs text-slate-700 mt-2">
+
+      <div>
+        <label>Food</label>
+        <input id="foodsFoodName"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+      </div>
+
+      <div>
+        <label>Comment</label>
+        <input id="foodsComment"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+      </div>
+
+      <div>
+        <label id="foodsCalLabel">Calories per gram</label>
+        <input id="foodsCalories"
+               type="number" step="0.1"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+      </div>
+
+    </div>
+
+    <div class="h-20"></div>
+  </div>
+
+  <div class="text-center text-sm text-blue-700 font-normal py-2">
+    <span id="versionLabel"></span>
+  </div>
+
+  <div class="border-t border-blue-300 bg-white flex items-center justify-between px-8 py-2 text-xs">
+    <button id="navLog" class="flex flex-col items-center gap-0.5 text-blue-700">
+      <span class="text-lg">📊</span><span>Log</span>
+    </button>
+    <button id="navAdd" class="flex flex-col items-center gap-0.5 text-blue-700">
+      <span class="text-lg">🍱</span><span>Meals</span>
+    </button>
+    <button id="navFoods" class="flex flex-col items-center gap-0.5 text-blue-700">
+      <span class="text-lg">🍽️</span><span>Foods</span>
+    </button>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

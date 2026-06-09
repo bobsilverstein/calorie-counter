@@ -1,0 +1,229 @@
+// v150 APP.JS — CHUNK 1 OF 2
+
+function hideAll() {
+  document.getElementById("logView").classList.add("hidden");
+  document.getElementById("mealsView").classList.add("hidden");
+  document.getElementById("foodsView").classList.add("hidden");
+  document.getElementById("backupsView").classList.add("hidden");
+}
+
+function showLog() {
+  hideAll();
+  document.getElementById("logView").classList.remove("hidden");
+  loadLog(currentDate);
+}
+
+function showMeals() {
+  hideAll();
+  document.getElementById("mealsView").classList.remove("hidden");
+  loadMealsForDate(currentDate);
+}
+
+function showFoods() {
+  hideAll();
+  document.getElementById("foodsView").classList.remove("hidden");
+  searchFoods();
+}
+
+function showBackups() {
+  hideAll();
+  document.getElementById("backupsView").classList.remove("hidden");
+  loadBackupList();
+}
+
+let currentDate = new Date().toISOString().slice(0,10);
+
+function prevDate() {
+  const d = new Date(currentDate);
+  d.setDate(d.getDate() - 1);
+  currentDate = d.toISOString().slice(0,10);
+  loadLog(currentDate);
+}
+
+function nextDate() {
+  const d = new Date(currentDate);
+  d.setDate(d.getDate() + 1);
+  currentDate = d.toISOString().slice(0,10);
+  loadLog(currentDate);
+}
+
+async function loadLog(dateStr) {
+  document.getElementById("currentDate").textContent = dateStr;
+
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(dateStr).collection("entries");
+  const snap = await ref.get();
+
+  const groups = { Breakfast:[], Lunch:[], Snack:[], Dinner:[] };
+  snap.forEach(doc => {
+    const d = doc.data();
+    if (groups[d.MealType]) groups[d.MealType].push(d);
+  });
+
+  renderMealBlocks(groups);
+}
+
+function renderMealBlocks(groups) {
+  const out = document.getElementById("mealBlocks");
+  out.innerHTML = "";
+
+  const order = ["Breakfast","Lunch","Snack","Dinner"];
+
+  order.forEach(type => {
+    const items = groups[type] || [];
+    const total = items.reduce((s,m)=>s + Math.round(m.TotalCalories), 0);
+
+    const div = document.createElement("div");
+    div.className = "mealBlock";
+    div.textContent = `${type} — ${total} cal`;
+    out.appendChild(div);
+  });
+
+  document.getElementById("totalCaloriesToday").textContent =
+    order.reduce((sum, type) =>
+      sum + groups[type].reduce((s,m)=>s + Math.round(m.TotalCalories), 0)
+    , 0);
+}
+// v150 APP.JS — CHUNK 2 OF 2
+
+function openAddFood() {
+  document.getElementById("addFoodModal").classList.remove("hidden");
+}
+
+function closeAddFood() {
+  document.getElementById("addFoodModal").classList.add("hidden");
+}
+
+async function saveFoodToMeal() {
+  const name = document.getElementById("foodNameInput").value.trim();
+  const size = Number(document.getElementById("servingSizeInput").value);
+  const unit = document.getElementById("unitInput").value.trim();
+  const cal = Number(document.getElementById("calPerUnitInput").value);
+  const mealType = document.getElementById("mealTypeInput").value;
+
+  if (!name || !size || !unit || !cal) return;
+
+  const total = Math.round(size * cal);
+
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(currentDate).collection("entries").doc();
+
+  await ref.set({
+    Food: name,
+    ServingSize: size,
+    Unit: unit,
+    CaloriesPerUnit: cal,
+    TotalCalories: total,
+    MealType: mealType,
+    Timestamp: new Date().toISOString()
+  });
+
+  await autoBackup();
+  closeAddFood();
+  loadLog(currentDate);
+}
+
+async function searchFoods() {
+  const q = document.getElementById("foodSearch").value.trim().toLowerCase();
+  const db = firebase.firestore();
+  const snap = await db.collection("Foods").get();
+
+  const results = [];
+  snap.forEach(doc => {
+    const d = doc.data();
+    if (d.Name.toLowerCase().includes(q)) results.push(d);
+  });
+
+  renderFoodResults(results.slice(0,6));
+}
+
+function renderFoodResults(list) {
+  const out = document.getElementById("foodResults");
+  out.innerHTML = "";
+
+  list.forEach(f => {
+    const isPiece = f.Unit.toLowerCase()==="piece" || f.Unit.toLowerCase()==="each";
+    const cal = isPiece ? Math.round(f.CaloriesPerUnit) : Number(f.CaloriesPerUnit).toFixed(2);
+
+    const row = document.createElement("div");
+    row.textContent = `${f.Name} — ${cal} cal/${f.Unit}`;
+    out.appendChild(row);
+  });
+}
+
+async function clearAllEntries() {
+  if (!confirm("Clear all entries?")) return;
+
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(currentDate).collection("entries");
+  const snap = await ref.get();
+
+  for (const doc of snap.docs) {
+    await doc.ref.delete();
+  }
+
+  await autoBackup();
+  loadLog(currentDate);
+}
+
+async function loadBackupList() {
+  const out = document.getElementById("backupList");
+  out.innerHTML = "Loading…";
+
+  const fs = await listFirestoreBackups();
+
+  let html = "<h3>Firestore Backups</h3>";
+  if (fs.length === 0) html += "<div>No Firestore backups.</div>";
+
+  fs.sort((a,b)=>b.path.localeCompare(a.path));
+  fs.forEach(b => {
+    html += `
+      <div>
+        <strong>${b.path}</strong>
+        <button onclick='previewFSBackup("${b.path}")'>Preview</button>
+      </div>`;
+  });
+
+  out.innerHTML = html;
+}
+
+async function previewFSBackup(path) {
+  const db = firebase.firestore();
+  const [day, timeFolder, file] = path.split("/");
+  const doc = await db.doc(`Backups/${day}/${timeFolder}/${file}`).get();
+  const data = doc.data();
+  renderBackupPreview(data);
+}
+
+function renderBackupPreview(backupObj) {
+  const out = document.getElementById("backupList");
+
+  let html = "<h3>Backup Preview</h3>";
+
+  html += "<h4>Meals</h4>";
+  backupObj.meals.forEach(m => {
+    html += `<div>${m.date} — ${m.MealType} — ${m.Food} — ${m.ServingSize}${m.Unit} — ${Math.round(m.TotalCalories)} cal</div>`;
+  });
+
+  html += "<h4>Foods</h4>";
+  backupObj.foods.forEach(f => {
+    const isPiece = f.Unit.toLowerCase()==="piece" || f.Unit.toLowerCase()==="each";
+    const cal = isPiece ? Math.round(f.CaloriesPerUnit) : Number(f.CaloriesPerUnit).toFixed(2);
+    html += `<div>${f.Name} — ${cal} cal/${f.Unit}</div>`;
+  });
+
+  html += `<button onclick='restoreBackupConfirm(${JSON.stringify(JSON.stringify(backupObj))})'>Restore</button>`;
+  html += `<button onclick='loadBackupList()'>Back</button>`;
+
+  out.innerHTML = html;
+}
+
+function restoreBackupConfirm(jsonStr) {
+  const obj = JSON.parse(jsonStr);
+  if (!confirm("Restore this backup?")) return;
+  restoreBackup(obj).then(()=>alert("Restore complete."));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  showLog();
+});

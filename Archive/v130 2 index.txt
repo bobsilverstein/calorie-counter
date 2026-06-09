@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter</title>
+
+  <!-- Tailwind (structure only, visuals overridden by styles.css) -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet" />
+
+  <!-- Firebase -->
+  <script defer src="/__/firebase/10.7.1/firebase-app-compat.js"></script>
+  <script defer src="/__/firebase/10.7.1/firebase-firestore-compat.js"></script>
+  <script defer src="/__/firebase/10.7.1/firebase-auth-compat.js"></script>
+
+  <!-- App scripts -->
+  <script defer src="/firebase-config.js"></script>
+  <script defer src="/app.js"></script>
+
+  <!-- Your v023 stylesheet (must be last) -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-white text-slate-900">
+
+  <!-- TOP BAR -->
+  <div id="topBox" class="p-4 border-b">
+    <div class="text-xl font-semibold">Calories Today</div>
+    <div id="todayCalories" class="text-3xl font-bold mt-1">0</div>
+    <div id="versionLabel" class="text-xs text-slate-500 mt-1"></div>
+  </div>
+
+  <!-- DATE NAV -->
+  <div class="p-4 flex items-center justify-between border-b">
+    <button id="prevDay" class="px-3 py-1 border rounded">&larr;</button>
+    <div id="currentDateLabel" class="font-medium"></div>
+    <button id="nextDay" class="px-3 py-1 border rounded">&rarr;</button>
+  </div>
+
+  <!-- MAIN VIEW CONTAINER -->
+  <div id="viewLog" class="p-4 space-y-4"></div>
+
+  <!-- ADD VIEW (empty — modal handles adding) -->
+  <div id="viewAdd" class="hidden p-4">
+    <div class="text-sm text-slate-600">Tap a meal to add food.</div>
+  </div>
+
+  <!-- FOODS VIEW -->
+  <div id="viewFoods" class="hidden p-4 space-y-3">
+    <input id="foodsSearch" type="text" placeholder="Search foods..." class="w-full border p-2 rounded" />
+    <label class="flex items-center gap-2 text-sm">
+      <input id="foodsShowArchived" type="checkbox" />
+      Show archived
+    </label>
+    <div id="foodsList" class="border rounded p-2"></div>
+  </div>
+
+  <!-- ADD FOOD MODAL -->
+  <div id="addFoodModal" class="fixed inset-0 bg-white z-40 hidden flex flex-col">
+    <div class="p-3 border-b flex items-center gap-2">
+      <button onclick="closeAddFood()" class="text-lg p-1">&times;</button>
+      <h2 class="font-bold text-sm">Add Food</h2>
+    </div>
+
+    <div class="p-4 space-y-3 overflow-y-auto">
+      <input id="addFoodName" type="text" placeholder="Food name" class="w-full border p-2 rounded" />
+
+      <div class="flex gap-2">
+        <input id="addServingA" type="number" placeholder="Serving A" class="w-1/2 border p-2 rounded" />
+        <input id="addServingB" type="number" placeholder="Serving B" class="w-1/2 border p-2 rounded" />
+      </div>
+
+      <input id="addServingSize" type="number" placeholder="Total grams" class="w-full border p-2 rounded" />
+      <input id="addCaloriesPerUnit" type="number" placeholder="Calories per gram" class="w-full border p-2 rounded" />
+      <input id="addComment" type="text" placeholder="Comment" class="w-full border p-2 rounded" />
+
+      <div class="text-right text-sm text-slate-600">
+        Total calories: <span id="addResultCalories">0</span>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="clearServing" class="flex-1 border rounded p-2">Clear</button>
+        <button id="addSave" class="flex-1 bg-blue-600 text-white rounded p-2">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="fixed bottom-0 left-0 right-0 border-t bg-white flex">
+    <button id="navLog" class="flex-1 p-3 border-r">Log</button>
+    <button id="navAdd" class="flex-1 p-3 border-r">Add</button>
+    <button id="navFoods" class="flex-1 p-3">Foods</button>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,269 @@
+// v158 — app.js CHUNK 1 (of 2)
+// v136 UI + v157 unified + long date + today arrow hide
+
+document.addEventListener("DOMContentLoaded", () => {
+  const db = firebase.firestore();
+
+  // DOM
+  const viewLog = document.getElementById("view-log");
+  const viewAdd = document.getElementById("view-add");
+  const viewFoods = document.getElementById("view-foods");
+
+  const navLog = document.getElementById("navLog");
+  const navAdd = document.getElementById("navAdd");
+  const navFoods = document.getElementById("navFoods");
+  const manageFoods = document.getElementById("manageFoods");
+
+  const dayLabel = document.getElementById("dayLabel");
+  const totalCalories = document.getElementById("totalCalories");
+  const mealsList = document.getElementById("mealsList");
+
+  const prevDay = document.getElementById("prevDay");
+  const nextDay = document.getElementById("nextDay");
+
+  const addSearch = document.getElementById("addSearch");
+  const addResults = document.getElementById("addResults");
+
+  const addFoodName = document.getElementById("addFoodName");
+  const addComment = document.getElementById("addComment");
+  const addUnitToggleGroup = document.getElementById("addUnitToggleGroup");
+  const addCalories = document.getElementById("addCalories");
+  const addServingSize = document.getElementById("addServingSize");
+
+  const foodsSearch = document.getElementById("foodsSearch");
+  const foodsList = document.getElementById("foodsList");
+  const foodsFoodName = document.getElementById("foodsFoodName");
+  const foodsComment = document.getElementById("foodsComment");
+  const foodsUnitToggleGroup = document.getElementById("foodsUnitToggleGroup");
+  const foodsCalories = document.getElementById("foodsCalories");
+  const foodsServingSize = document.getElementById("foodsServingSize");
+
+  const versionLabel = document.getElementById("versionLabel");
+  const headerBanner = document.getElementById("headerBanner");
+
+  // VERSION LABEL
+  const ts = new Date();
+  versionLabel.textContent =
+    "v158 " +
+    ts.toLocaleDateString("en-US") +
+    " " +
+    ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // STATE
+  let currentDate = new Date();
+  let currentMeal = "breakfast";
+  let foodsCache = [];
+  let addUnit = "g";
+  let foodsUnit = "g";
+
+  const MEALS = ["breakfast", "lunch", "snack", "dinner"];
+
+  // LONG DATE FORMAT
+  function longDate(d) {
+    return d.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    });
+  }
+
+  function dateKey(d) {
+    return d.toISOString().split("T")[0];
+  }
+
+  function renderDate() {
+    dayLabel.textContent = longDate(currentDate);
+
+    const todayKey = dateKey(new Date());
+    nextDay.style.visibility =
+      dateKey(currentDate) === todayKey ? "hidden" : "visible";
+
+    loadDailyLog();
+  }
+
+  prevDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderDate();
+  };
+
+  nextDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    renderDate();
+  };
+
+  // VIEW NAVIGATION
+  function showView(v) {
+    viewLog.classList.add("hidden");
+    viewAdd.classList.add("hidden");
+    viewFoods.classList.add("hidden");
+    if (v === "log") viewLog.classList.remove("hidden");
+    if (v === "add") viewAdd.classList.remove("hidden");
+    if (v === "foods") viewFoods.classList.remove("hidden");
+  }
+
+  function pushView(v) {
+    history.pushState({ view: v }, "");
+    showView(v);
+  }
+
+  window.onpopstate = () => {
+    const v = history.state?.view || "log";
+    showView(v);
+  };
+
+  navLog.onclick = () => pushView("log");
+  navAdd.onclick = () => pushView("add");
+  navFoods.onclick = () => pushView("foods");
+  manageFoods.onclick = () => pushView("foods");
+
+  // FOODS LOADING
+  function loadFoods() {
+    db.collection("Foods").onSnapshot(snap => {
+      foodsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFoodsList();
+    });
+  }
+
+  function matchesSearch(f, q) {
+    return (
+      (f.Food || "").toLowerCase().includes(q) ||
+      (f.Comment || "").toLowerCase().includes(q)
+    );
+  }
+
+  function renderFoodsList() {
+    const q = foodsSearch.value.toLowerCase();
+    foodsList.innerHTML = "";
+
+    foodsCache
+      .filter(f => matchesSearch(f, q))
+      .forEach(f => {
+        const btn = document.createElement("button");
+        btn.className = "w-full text-left p-2 border-b";
+        btn.innerHTML = `
+          <div class="font-medium">${f.Food}</div>
+          <div class="text-sm text-slate-600">${f.CaloriesPerServing} cal • ${f.ServingSize} ${f.Unit}</div>
+        `;
+        btn.onclick = () => loadFoodIntoEditor(f);
+        foodsList.appendChild(btn);
+      });
+  }
+
+  foodsSearch.oninput = renderFoodsList;
+
+  function loadFoodIntoEditor(f) {
+    foodsFoodName.value = f.Food;
+    foodsComment.value = f.Comment || "";
+    foodsCalories.value = f.CaloriesPerServing;
+    foodsServingSize.value = f.ServingSize;
+    foodsUnit = f.Unit;
+    updateFoodsUnitUI();
+  }
+
+  function updateFoodsUnitUI() {
+    [...foodsUnitToggleGroup.children].forEach(btn => {
+      const u = btn.dataset.unit;
+      btn.style.backgroundColor = u === foodsUnit ? "#dbeafe" : "white";
+      btn.style.color = u === foodsUnit ? "#1d4ed8" : "#000";
+      btn.style.borderColor = u === foodsUnit ? "#1d4ed8" : "#ccc";
+    });
+  }
+
+  [...foodsUnitToggleGroup.children].forEach(btn => {
+    btn.onclick = () => {
+      foodsUnit = btn.dataset.unit;
+      updateFoodsUnitUI();
+    };
+  });
+
+  // ADD VIEW SEARCH
+  addSearch.oninput = () => {
+    const q = addSearch.value.toLowerCase();
+    addResults.innerHTML = "";
+
+    foodsCache
+      .filter(f => matchesSearch(f, q))
+      .forEach(f => {
+        const btn = document.createElement("button");
+        btn.className = "w-full text-left p-2 border-b";
+        btn.innerHTML = `
+          <div class="font-medium">${f.Food}</div>
+          <div class="text-sm text-slate-600">${f.CaloriesPerServing} cal • ${f.ServingSize} ${f.Unit}</div>
+        `;
+        btn.onclick = () => selectFoodForAdd(f);
+        addResults.appendChild(btn);
+      });
+  };
+
+  function selectFoodForAdd(f) {
+    addFoodName.value = f.Food;
+    addComment.value = f.Comment || "";
+    addCalories.value = f.CaloriesPerServing;
+    addServingSize.value = f.ServingSize;
+    addUnit = f.Unit;
+    updateAddUnitUI();
+  }
+
+  function updateAddUnitUI() {
+    [...addUnitToggleGroup.children].forEach(btn => {
+      const u = btn.dataset.unit;
+      btn.style.backgroundColor = u === addUnit ? "#dbeafe" : "white";
+      btn.style.color = u === addUnit ? "#1d4ed8" : "#000";
+      btn.style.borderColor = u === addUnit ? "#1d4ed8" : "#ccc";
+    });
+  }
+
+  [...addUnitToggleGroup.children].forEach(btn => {
+    btn.onclick = () => {
+      addUnit = btn.dataset.unit;
+      updateAddUnitUI();
+    };
+  });
+
+  // MEAL TOGGLES
+  document.querySelectorAll(".meal-toggle").forEach(btn => {
+    btn.onclick = () => {
+      currentMeal = btn.dataset.meal;
+      document.querySelectorAll(".meal-toggle").forEach(b => {
+        b.style.backgroundColor = "white";
+      });
+      btn.style.backgroundColor = "#dbeafe";
+    };
+  });
+
+  // expose to chunk 2
+  window.v158 = {
+    db,
+    dateKey,
+    longDate,
+    currentDateRef: () => currentDate,
+    setCurrentDate: d => (currentDate = d),
+    currentMealRef: () => currentMeal,
+    setCurrentMeal: m => (currentMeal = m),
+    MEALS,
+    addFoodName,
+    addComment,
+    addCalories,
+    addServingSize,
+    addUnitRef: () => addUnit,
+    foodsCacheRef: () => foodsCache,
+    pushView,
+    loadDailyLog: null, // will attach in chunk 2
+    headerBanner,
+    totalCalories,
+    mealsList
+  };
+});
+// v158 — app.js CHUNK 2 (of 2)
+
+document.addEventListener("DOMContentLoaded", () => {
+  const {
+    db,
+    dateKey,
+    longDate,
+    currentDateRef,
+    setCurrentDate,
+    currentMealRef,
+    setCurrentMeal,
+    MEALS,

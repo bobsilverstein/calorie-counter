@@ -1,0 +1,85 @@
+// v150 BACKUP SYSTEM
+
+function fsBackupPath(dateStr, timeStr) {
+  return `Backups/${dateStr}/${timeStr}.json`;
+}
+
+async function createBackupObject() {
+  const meals = await exportAllMeals();
+  const foods = await exportAllFoods();
+  return { meals, foods };
+}
+
+async function exportAllMeals() {
+  const db = firebase.firestore();
+  const out = [];
+  const snap = await db.collection("DailyLog").get();
+
+  for (const doc of snap.docs) {
+    const date = doc.id;
+    const entries = await doc.ref.collection("entries").get();
+    entries.forEach(e => out.push({ date, ...e.data() }));
+  }
+  return out;
+}
+
+async function exportAllFoods() {
+  const db = firebase.firestore();
+  const out = [];
+  const snap = await db.collection("Foods").get();
+  snap.forEach(doc => out.push({ id: doc.id, ...doc.data() }));
+  return out;
+}
+
+async function saveBackupToFirestore(backupObj) {
+  const db = firebase.firestore();
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0,10);
+  const timeStr = d.toTimeString().slice(0,8).replace(/:/g,"");
+  await db.doc(fsBackupPath(dateStr, timeStr)).set(backupObj);
+}
+
+function saveBackupLocal(backupObj) {
+  const d = new Date();
+  const dateStr = d.toISOString().slice(0,10);
+  const timeStr = d.toTimeString().slice(0,8).replace(/:/g,"");
+  const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${dateStr}_${timeStr}.json`;
+  a.click();
+}
+
+async function autoBackup() {
+  const backupObj = await createBackupObject();
+  await saveBackupToFirestore(backupObj);
+  saveBackupLocal(backupObj);
+}
+
+async function listFirestoreBackups() {
+  const db = firebase.firestore();
+  const out = [];
+  const days = await db.collection("Backups").get();
+
+  for (const day of days.docs) {
+    const sub = await day.ref.listCollections();
+    for (const col of sub) {
+      const docs = await col.get();
+      docs.forEach(d => out.push({ path: `${day.id}/${col.id}/${d.id}`, data: d.data() }));
+    }
+  }
+  return out;
+}
+
+async function restoreBackup(backupObj) {
+  const db = firebase.firestore();
+
+  for (const m of backupObj.meals) {
+    const ref = db.collection("DailyLog").doc(m.date).collection("entries").doc();
+    await ref.set(m);
+  }
+
+  for (const f of backupObj.foods) {
+    await db.collection("Foods").doc(f.id).set(f);
+  }
+}

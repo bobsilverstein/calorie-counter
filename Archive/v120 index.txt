@@ -1,0 +1,135 @@
+<!-- index.html — v120 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calorie Counter v120</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    html { font-size: 125%; }
+    * { line-height: 1.1; }
+    .view { display: none; }
+    .view.active { display: flex; }
+    .mic-btn { @apply ml-1 px-2 py-1 rounded-full bg-purple-100 text-purple-700 text-xs; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="max-w-md mx-auto min-h-screen flex flex-col bg-white shadow">
+    <!-- HEADER / TODAY SUMMARY -->
+    <header class="bg-purple-600 text-white px-4 py-3">
+      <div class="text-xs font-semibold">Today</div>
+      <div id="todayCalories" class="text-lg font-extrabold">0 calories today</div>
+    </header>
+
+    <!-- MAIN VIEWS -->
+    <main class="flex-1 relative overflow-hidden">
+      <!-- LOG VIEW -->
+      <div id="view_log" class="view active flex flex-col">
+        <div id="mealList" class="flex-1 overflow-y-auto divide-y text-sm">
+          <!-- Meals + foods injected here -->
+        </div>
+      </div>
+
+      <!-- FOODS VIEW (simple placeholder list) -->
+      <div id="view_foods" class="view flex flex-col">
+        <div class="p-3 border-b text-sm font-semibold">Foods</div>
+        <div class="flex-1 overflow-y-auto text-xs" id="foodsList">
+          <!-- could show master foods list if desired -->
+        </div>
+      </div>
+
+      <!-- ADD / EDIT SERVING VIEW -->
+      <div id="view_serving" class="view fixed inset-0 bg-white z-30 flex flex-col">
+        <div class="bg-purple-600 text-white p-3 flex items-center gap-2">
+          <button onclick="closeServing()" class="text-lg p-0.5">✕</button>
+          <h2 id="servingTitle" class="font-bold text-sm">Add Serving</h2>
+        </div>
+        <div class="p-3 space-y-3 text-sm">
+          <div>
+            <div class="text-[11px] text-gray-500 mb-0.5">Food</div>
+            <div id="servingFoodName" class="font-semibold truncate">—</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] text-gray-500 mb-0.5">Unit</label>
+              <input id="servingUnit" class="w-full border rounded px-2 py-1 text-sm" readonly />
+            </div>
+            <div>
+              <label class="block text-[11px] text-gray-500 mb-0.5">Amount</label>
+              <input id="servingAmount" type="number" step="0.01" class="w-full border rounded px-2 py-1 text-sm" oninput="updateServingCalc()" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label id="calPerUnitLabel" class="block text-[11px] text-gray-500 mb-0.5">Calories per gram</label>
+              <input id="calPerUnit" type="number" step="0.01" class="w-full border rounded px-2 py-1 text-sm" readonly />
+            </div>
+            <div>
+              <label class="block text-[11px] text-gray-500 mb-0.5">Serving calories</label>
+              <input id="servingCalories" type="number" class="w-full border rounded px-2 py-1 text-sm bg-gray-50" readonly />
+            </div>
+          </div>
+
+          <div class="pt-2 flex justify-between items-center">
+            <button onclick="deleteServing()" id="deleteServingBtn" class="text-xs text-red-600 hidden">Delete</button>
+            <button onclick="saveServing()" class="ml-auto bg-purple-600 text-white text-sm font-semibold px-4 py-1.5 rounded-lg">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD FOOD TO LOG MODAL -->
+      <div id="addFoodModal" class="view fixed inset-0 bg-white z-40 flex flex-col">
+        <div class="bg-purple-600 text-white p-3 flex items-center gap-2">
+          <button onclick="closeAddFood()" class="text-lg p-0.5">✕</button>
+          <h2 class="font-bold text-sm">Add Food to Log</h2>
+        </div>
+        <!-- Meal selector -->
+        <div class="flex gap-1.5 p-2 bg-gray-50 border-b">
+          <button onclick="pickMeal('breakfast')" id="mealBtn_breakfast" class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-orange-200 bg-white text-orange-700 hover:bg-orange-50">☕ Breakfast</button>
+          <button onclick="pickMeal('lunch')" id="mealBtn_lunch" class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-green-200 bg-white text-green-700 hover:bg-green-50">🍴 Lunch</button>
+          <button onclick="pickMeal('snack')" id="mealBtn_snack" class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-yellow-200 bg-white text-yellow-700 hover:bg-yellow-50">🍪 Snack</button>
+          <button onclick="pickMeal('dinner')" id="mealBtn_dinner" class="meal-btn flex-1 text-xs font-semibold py-1.5 rounded-lg border-2 border-blue-200 bg-white text-blue-700 hover:bg-blue-50">🍽 Dinner</button>
+        </div>
+        <div class="p-2">
+          <div class="flex gap-1.5 items-center">
+            <input id="foodSearch" type="search" placeholder="Search foods..." oninput="filterFoods()" class="flex-1 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+            <button onclick="voiceInput('foodSearch', false, voiceFilterFoods)" class="mic-btn" id="mic_foodSearch" title="Voice search">🎤</button>
+          </div>
+        </div>
+        <div id="foodResults" class="flex-1 overflow-y-auto px-2 pb-2 space-y-1 text-sm">
+          <!-- food items injected here -->
+        </div>
+      </div>
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav class="border-t flex text-xs">
+      <button class="flex-1 py-2 flex flex-col items-center justify-center" onclick="showView('log')">
+        <span>📋</span>
+        <span>Log</span>
+      </button>
+      <button class="flex-1 py-2 flex flex-col items-center justify-center" onclick="openAddFood()">
+        <span class="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg">＋</span>
+        <span>Add</span>
+      </button>
+      <button class="flex-1 py-2 flex flex-col items-center justify-center" onclick="showView('foods')">
+        <span>🍎</span>
+        <span>Foods</span>
+      </button>
+    </nav>
+
+    <div class="text-[10px] text-gray-400 text-center py-1">v120 · 2026-05-14</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

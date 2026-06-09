@@ -1,0 +1,222 @@
+/* v190 — clean, stable */
+
+window.loadMostRecentWeight = function(){};
+
+const db = firebase.firestore();
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const tefillinCheckbox = document.getElementById("tefillinCheckbox");
+  const tefillinComment = document.getElementById("tefillinComment");
+  const tefillinClear = document.getElementById("tefillinClear");
+  const tefillinMic = document.getElementById("tefillinMic");
+
+  let SHABBAT_LAT = Number(localStorage.getItem("lat")) || 42.0039;
+  let SHABBAT_LON = Number(localStorage.getItem("lng")) || -87.9703;
+
+  const exerciseComment = document.getElementById("exerciseComment");
+
+  const openLocation = document.getElementById("openLocation");
+  const locationModal = document.getElementById("locationModal");
+  const locationClose = document.getElementById("locationClose");
+  const locationInput = document.getElementById("locationInput");
+  const locationSave = document.getElementById("locationSave");
+
+  const MEALS = ["breakfast","lunch","snack","dinner"];
+  let currentDate = new Date();
+  let currentMeal = "breakfast";
+  let suppressSave = false;
+
+  function fmt(d){
+    return new Date(d.getTime() - d.getTimezoneOffset()*60000)
+      .toISOString().split("T")[0];
+  }
+
+  function isToday(d){ return fmt(d) === fmt(new Date()); }
+
+  async function geocodeLocation(text){
+    if (text.includes(",")){
+      const [lat,lng] = text.split(",").map(Number);
+      return {lat,lng};
+    }
+    const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(text)}`;
+    const r=await fetch(url);
+    const d=await r.json();
+    if (!d.length) return null;
+    return {lat:Number(d[0].lat), lng:Number(d[0].lon)};
+  }
+
+  openLocation.onclick = () => {
+    locationInput.value = localStorage.getItem("locationText") || "";
+    locationModal.classList.remove("hidden");
+  };
+  locationClose.onclick = () => locationModal.classList.add("hidden");
+
+  locationSave.onclick = async () => {
+    const t = locationInput.value.trim();
+    if (!t) return;
+    const loc = await geocodeLocation(t);
+    if (!loc){ alert("Not found"); return; }
+    localStorage.setItem("locationText", t);
+    localStorage.setItem("lat", loc.lat);
+    localStorage.setItem("lng", loc.lng);
+    SHABBAT_LAT = loc.lat;
+    SHABBAT_LON = loc.lng;
+    locationModal.classList.add("hidden");
+    loadShabbatInfo(currentDate);
+  };
+
+  async function isJewishHoliday(d){
+    const y=d.getFullYear(), m=d.getMonth()+1, g=d.getDate();
+    const url=`https://www.hebcal.com/converter?cfg=json&gy=${y}&gm=${m}&gd=${g}&g2h=1`;
+    try{
+      const r=await fetch(url); const j=await r.json();
+      if (!j.events) return false;
+      const list=["Rosh Hashana","Yom Kippur","Sukkot","Shemini Atzeret","Simchat Torah","Pesach","Shavuot"];
+      return j.events.some(e=>list.some(n=>e.includes(n)));
+    }catch{return false;}
+  }
+
+  function applyTefillinDisable(shabbat,yomtov){
+    const dis = shabbat || yomtov;
+    tefillinCheckbox.disabled = dis;
+    if (dis) tefillinCheckbox.checked = false;
+    tefillinCheckbox.classList.toggle("opacity-40", dis);
+    tefillinComment.disabled = false;
+    tefillinClear.disabled = false;
+    tefillinMic.disabled = false;
+  }
+
+  async function loadShabbatInfo(d){
+    if (d.getDay() !== 5){ shabbatInfo.classList.add("hidden"); return; }
+    const key = fmt(d);
+    const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&start=${key}&end=${key}`;
+    try{
+      const r=await fetch(url); const j=await r.json();
+      const items=j.items||[];
+      const candles=items.find(i=>i.category==="candles");
+      const parsha=items.find(i=>i.category==="parashat");
+      shabbatCandles.textContent = candles ? candles.title : "";
+      shabbatParsha.textContent = parsha ? `${parsha.title} / ${parsha.hebrew}` : "";
+      if (!candles && !parsha) shabbatInfo.classList.add("hidden");
+      else shabbatInfo.classList.remove("hidden");
+    }catch{ shabbatInfo.classList.add("hidden"); }
+  }
+
+  async function loadNotes(){
+    const s=await db.collection("DailyNotes").doc(fmt(currentDate)).get();
+    const d=s.exists?s.data():{};
+    tefillinCheckbox.checked=!!d.Tefillin;
+    tefillinComment.value=d.TefillinComment||"";
+    exerciseComment.value=d.ExerciseComment||"";
+    weightValue.value=d.WeightValue!=null?d.WeightValue:"";
+  }
+
+  async function saveNotes(){
+    if (suppressSave) return;
+    await db.collection("DailyNotes").doc(fmt(currentDate)).set({
+      Tefillin: tefillinCheckbox.checked,
+      TefillinComment: tefillinComment.value.trim(),
+      WeightValue: weightValue.value===""?null:Number(weightValue.value),
+      ExerciseComment: exerciseComment.value.trim(),
+      Timestamp: Date.now()
+    },{merge:true});
+  }
+
+  logSave.onclick = saveNotes;
+
+  async function loadLog(){
+    const key=fmt(currentDate);
+    const sh=currentDate.getDay()===6;
+    const yt=await isJewishHoliday(currentDate);
+    applyTefillinDisable(sh,yt);
+
+    mealsList.innerHTML="";
+    let total=0;
+
+    for (const meal of MEALS){
+      const snap=await db.collection("Logs").doc(key).collection(meal)
+        .orderBy("Timestamp").get();
+      const entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const mealTotal=entries.reduce((a,e)=>a+(e.TotalCalories||0),0);
+      total+=mealTotal;
+
+      const sec=document.createElement("div");
+      sec.className="border border-blue-300 rounded p-2";
+
+      const head=document.createElement("div");
+      head.className="flex justify-between items-center cursor-pointer";
+      head.innerHTML=`
+        <div class="font-semibold text-blue-700">${meal}</div>
+        <div class="text-sm text-blue-700">${mealTotal} cal</div>
+      `;
+
+      const body=document.createElement("div");
+      body.className="mt-2 space-y-2";
+
+      entries.forEach(e=>{
+        const row=document.createElement("div");
+        row.className="flex justify-between items-baseline border-b border-blue-200 pb-1 text-sm";
+        row.innerHTML=`
+          <div class="flex-1 truncate">
+            <span class="font-medium">${e.Food}</span>
+            <span class="text-blue-700">
+              ${e.Comment?` – ${e.Comment}`:""}
+              ${e.ServingSize?` – ${e.ServingSize}`:""}
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-16 text-right font-bold text-blue-700">${e.TotalCalories} cal</div>
+            <button class="text-red-600 font-bold text-lg" data-id="${e.id}" data-meal="${meal}">✕</button>
+          </div>
+        `;
+        body.appendChild(row);
+      });
+
+      head.onclick=()=>{
+        pushView("add");
+        currentMeal=meal;
+      };
+
+      sec.appendChild(head);
+      sec.appendChild(body);
+      mealsList.appendChild(sec);
+    }
+
+    mealsList.querySelectorAll("button[data-id]").forEach(btn=>{
+      btn.onclick=async()=>{
+        await db.collection("Logs").doc(fmt(currentDate))
+          .collection(btn.dataset.meal).doc(btn.dataset.id).delete();
+        loadLog();
+      };
+    });
+
+    totalCalories.textContent=`${total} calories`;
+  }
+
+  function pushView(v){
+    viewLog.classList.add("hidden");
+    viewAdd.classList.add("hidden");
+    viewFoods.classList.add("hidden");
+    if (v==="log") viewLog.classList.remove("hidden");
+    if (v==="add") viewAdd.classList.remove("hidden");
+    if (v==="foods") viewFoods.classList.remove("hidden");
+  }
+
+  function renderDate(){
+    suppressSave=true;
+    dayName.textContent = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][currentDate.getDay()];
+    dayDate.textContent = fmt(currentDate);
+    loadLog();
+    loadNotes();
+    loadShabbatInfo(currentDate);
+    suppressSave=false;
+  }
+
+  prevDay.onclick = () => { currentDate.setDate(currentDate.getDate()-1); renderDate(); };
+  nextDay.onclick = () => { currentDate.setDate(currentDate.getDate()+1); renderDate(); };
+  todayButton.onclick = () => { currentDate=new Date(); renderDate(); pushView("log"); };
+
+  renderDate();
+
+});

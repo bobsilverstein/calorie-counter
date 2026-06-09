@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calorie Counter v115</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- No favicon 404 -->
+  <link rel="icon" href="data:," />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+
+<body class="bg-slate-100">
+  <div class="min-h-screen flex justify-center">
+    <div class="w-full max-w-md bg-white flex flex-col relative">
+
+      <!-- TOP BAR -->
+      <div class="bg-purple-600 text-white px-4 py-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between text-sm">
+          <button id="prevDay" class="px-2 py-1 rounded hover:bg-purple-500">&lt;</button>
+          <div id="currentDateLabel" class="font-semibold"></div>
+          <button id="nextDay" class="px-2 py-1 rounded hover:bg-purple-500">&gt;</button>
+        </div>
+        <div class="text-center">
+          <div id="todayCalories" class="text-4xl font-bold">0</div>
+          <div class="text-xs opacity-90">calories</div>
+        </div>
+      </div>
+
+      <!-- LOG VIEW -->
+      <div id="view-log" class="flex-1 overflow-y-auto p-3 space-y-3">
+        <div id="mealsContainer" class="space-y-3"></div>
+      </div>
+
+      <!-- ADD VIEW -->
+      <div id="view-add" class="hidden flex-1 overflow-y-auto p-3 space-y-3">
+        <h2 class="text-lg font-semibold mb-1">Add Food to Log</h2>
+
+        <div>
+          <label class="text-xs text-slate-600">Search Foods</label>
+          <input id="addSearchInput" class="w-full border rounded px-2 py-1 text-sm" placeholder="Search foods…" />
+          <div id="addSearchResults" class="mt-1 border rounded divide-y max-h-52 overflow-y-auto text-sm"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+          <div>
+            <label>Food</label>
+            <input id="addFoodName" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label>Meal</label>
+            <select id="addMeal" class="w-full border rounded px-2 py-1 text-sm">
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="snack">Snack</option>
+              <option value="dinner">Dinner</option>
+            </select>
+          </div>
+          <div>
+            <label>Amount</label>
+            <input id="addAmount" type="number" step="0.25" value="1" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label>Serving Size</label>
+            <input id="addServingSize" type="number" step="0.1" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label>Calories / Serving</label>
+            <input id="addCaloriesPerServing" type="number" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label>Unit</label>
+            <input id="addUnit" class="w-full border rounded px-2 py-1 text-sm" />
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-600">Comment</label>
+          <input id="addComment" class="w-full border rounded px-2 py-1 text-sm" />
+        </div>
+
+        <button id="addSave"
+          class="w-full bg-purple-600 text-white py-2 rounded text-sm font-semibold hover:bg-purple-700">
+          Save to Log
+        </button>
+      </div>
+
+      <!-- FOODS VIEW -->
+      <div id="view-foods" class="hidden flex-1 overflow-y-auto p-3 space-y-3">
+        <h2 class="text-lg font-semibold mb-1">Foods</h2>
+
+        <div class="flex items-center justify-between gap-2">
+          <input id="foodsSearchInput" class="flex-1 border rounded px-2 py-1 text-sm" placeholder="Search foods…" />
+          <label class="flex items-center gap-1 text-xs text-slate-700">
+            <input id="foodsArchivedCheckbox" type="checkbox" class="h-3 w-3" />
+            <span>Search archived</span>
+          </label>
+        </div>
+
+        <div id="foodsList" class="mt-2 border rounded divide-y max-h-80 overflow-y-auto text-sm"></div>
+      </div>
+
+      <!-- VERSION -->
+      <div class="absolute left-0 right-0 bottom-12 text-center text-xs text-slate-500">
+        <span id="versionLabel">v115</span>
+      </div>
+
+      <!-- BOTTOM NAV -->
+      <div class="fixed bottom-0 left-0 right-0 flex justify-center bg-transparent">
+        <div class="w-full max-w-md bg-white border-t border-slate-200 flex items-center justify-between px-8 py-2 text-xs">
+          <button id="navLog" class="flex flex-col items-center gap-0.5 text-slate-700">
+            <span class="text-lg">📊</span>
+            <span>Log</span>
+          </button>
+          <button id="navAdd"
+            class="flex items-center justify-center w-9 h-9 rounded-full bg-purple-600 text-white text-xl -mt-5 shadow">
+            +
+          </button>
+          <button id="navFoods" class="flex flex-col items-center gap-0.5 text-slate-700">
+            <span class="text-lg">🍽️</span>
+            <span>Foods</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

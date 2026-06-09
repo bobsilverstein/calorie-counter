@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter v109</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body { margin: 0; font-family: sans-serif; background: white; color: #222; }
+
+    /* v023 purple header */
+    #header {
+      background: #6a1b9a;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    /* v023 summary bar */
+    #summaryBar {
+      background: white;
+      padding: 10px 12px;
+      border-bottom: 1px solid #ddd;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    /* THICK v023 blue bars */
+    .meal-bar {
+      background: #1976d2;
+      color: white;
+      padding: 14px 12px;
+      font-weight: bold;
+      font-size: 16px;
+      margin-top: 0;
+    }
+
+    /* tight spacing meal items */
+    .meal-items {
+      padding: 6px 12px;
+    }
+
+    .meal-item {
+      padding: 4px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    /* full-screen views */
+    .view {
+      display: none;
+      padding-bottom: 40px;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    /* Add Food + Foods screens */
+    .screen-header {
+      background: #6a1b9a;
+      color: white;
+      padding: 10px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .back-btn {
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+
+    .food-result {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+    }
+
+    #versionTag {
+      position: fixed;
+      bottom: 4px;
+      right: 6px;
+      font-size: 11px;
+      color: #aaa;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- v023 purple header -->
+  <div id="header">
+    <span id="dateLabel"></span>
+  </div>
+
+  <!-- v023 summary bar -->
+  <div id="summaryBar">Today — 0 calories</div>
+
+  <!-- LOG VIEW -->
+  <div id="logView" class="view active"></div>
+
+  <!-- ADD FOOD VIEW -->
+  <div id="addFoodView" class="view">
+    <div class="screen-header">
+      <span class="back-btn" id="backFromAdd">←</span>
+      Add Food to Log
+    </div>
+
+    <div style="padding: 12px;">
+      <input id="addFoodSearch" placeholder="Search foods…" />
+      <div id="addFoodResults"></div>
+    </div>
+  </div>
+
+  <!-- FOODS VIEW -->
+  <div id="foodsView" class="view">
+    <div class="screen-header">
+      <span class="back-btn" id="backFromFoods">←</span>
+      Foods
+    </div>
+
+    <div style="padding: 12px;">
+      <input id="foodsSearch" placeholder="Search foods…" />
+      <div id="foodsList"></div>
+    </div>
+  </div>
+
+  <div id="versionTag"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

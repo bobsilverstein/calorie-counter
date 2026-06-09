@@ -1,0 +1,377 @@
+// app.js – advanced version with Foods, Add Food modal, per‑date Logs, CaloriesPerServing + CaloriesForServing,
+// serving size blank by default, NO meal picker, with voice hooks (stubs).
+
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Firebase setup ---
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // --- DOM elements ---
+  const dateInput = document.getElementById("dateInput");          // your date picker
+  const mealContainer = document.getElementById("meal-container"); // where daily log entries render
+  const dailyTotalEl = document.getElementById("daily-total");     // daily calories total (if present)
+
+  // Add Food modal elements
+  const addFoodModal = document.getElementById("addFoodModal");
+  const addFoodFoodInput = document.getElementById("addFoodFood");
+  const addFoodCommentInput = document.getElementById("addFoodComment");
+  const addFoodUnitInput = document.getElementById("addFoodUnit");
+  const addFoodCaloriesPerServingInput = document.getElementById("addFoodCaloriesPerServing");
+  const addFoodServingSizeInput = document.getElementById("addFoodServingSize");
+  const addFoodCaloriesForServingInput = document.getElementById("addFoodCaloriesForServing");
+  const addFoodSaveButton = document.getElementById("addFoodSave");
+  const addFoodClearButton = document.getElementById("addFoodClear");
+
+  // Foods search (for autofill)
+  const foodSearchInput = document.getElementById("foodSearch");
+  const foodSearchResults = document.getElementById("foodSearchResults");
+
+  // --- State ---
+  let currentUser = null;
+  let currentDateStr = getTodayStr(); // "YYYY-MM-DD"
+  let foodsCache = [];                // loaded Foods collection
+  let currentSelectedFoodDoc = null;  // Firestore doc for selected food (for calcs)
+
+  // --- Auth handling ---
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (!user) {
+      mealContainer.innerHTML = "<p class='p-4 text-sm text-gray-600'>Please sign in.</p>";
+      return;
+    }
+
+    // Ensure date input has a value
+    if (dateInput) {
+      dateInput.value = currentDateStr;
+      dateInput.addEventListener("change", () => {
+        currentDateStr = dateInput.value || getTodayStr();
+        loadLogsForDate(currentDateStr);
+      });
+    }
+
+    // Load Foods and logs
+    loadFoods().then(() => {
+      setupFoodSearch();
+    });
+    loadLogsForDate(currentDateStr);
+
+    // Wire Add Food modal buttons
+    if (addFoodSaveButton) {
+      addFoodSaveButton.addEventListener("click", saveCurrentServingToLog);
+    }
+    if (addFoodClearButton) {
+      addFoodClearButton.addEventListener("click", clearAddFoodForm);
+    }
+  });
+
+  // --- Utility: today as YYYY-MM-DD ---
+  function getTodayStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  // --- Load Foods collection into cache ---
+  async function loadFoods() {
+    try {
+      const snapshot = await db.collection("Foods").get();
+      foodsCache = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (err) {
+      console.error("Error loading Foods:", err);
+    }
+  }
+
+  // --- Setup food search / autofill ---
+  function setupFoodSearch() {
+    if (!foodSearchInput || !foodSearchResults) return;
+
+    foodSearchInput.addEventListener("input", () => {
+      const query = foodSearchInput.value.trim().toLowerCase();
+      renderFoodSearchResults(query);
+    });
+  }
+
+  function renderFoodSearchResults(query) {
+    foodSearchResults.innerHTML = "";
+    if (!query) return;
+
+    const matches = foodsCache.filter(f =>
+      (f.Food || "").toLowerCase().includes(query)
+    );
+
+    matches.forEach(foodDoc => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "w-full text-left px-2 py-1 text-sm hover:bg-gray-100";
+      btn.textContent = foodDoc.Food || "(unnamed)";
+      btn.addEventListener("click", () => {
+        selectFoodFromSearch(foodDoc);
+      });
+      foodSearchResults.appendChild(btn);
+    });
+  }
+
+  // --- When a food is selected from search ---
+  function selectFoodFromSearch(foodDoc) {
+    currentSelectedFoodDoc = foodDoc;
+
+    // Autofill fields
+    if (addFoodFoodInput) addFoodFoodInput.value = foodDoc.Food || "";
+    if (addFoodCommentInput) addFoodCommentInput.value = foodDoc.Comment || "";
+    if (addFoodUnitInput) addFoodUnitInput.value = foodDoc.Unit || "";
+
+    // Show CaloriesPerServing from DB
+    const cps = Number(foodDoc.CaloriesPerServing || 0);
+    if (addFoodCaloriesPerServingInput) {
+      addFoodCaloriesPerServingInput.value = cps > 0 ? cps.toString() : "";
+    }
+
+    // ServingSize input stays BLANK by your choice
+    if (addFoodServingSizeInput) {
+      addFoodServingSizeInput.value = "";
+    }
+
+    // Clear calculated calories
+    if (addFoodCaloriesForServingInput) {
+      addFoodCaloriesForServingInput.value = "";
+    }
+
+    // Wire live calculation on serving size input
+    if (addFoodServingSizeInput) {
+      addFoodServingSizeInput.removeEventListener("input", handleServingSizeInput);
+      addFoodServingSizeInput.addEventListener("input", handleServingSizeInput);
+    }
+
+    // Close search results
+    if (foodSearchResults) {
+      foodSearchResults.innerHTML = "";
+    }
+
+    // Optionally open modal if not already open
+    if (addFoodModal) {
+      addFoodModal.classList.remove("hidden");
+    }
+  }
+
+  // --- Live calculation when user types serving size ---
+  function handleServingSizeInput() {
+    if (!currentSelectedFoodDoc) return;
+
+    const servingEntered = Number(addFoodServingSizeInput.value || 0);
+    const dbServingSize = Number(currentSelectedFoodDoc.ServingSize || 0);
+    const dbCaloriesPerServing = Number(currentSelectedFoodDoc.CaloriesPerServing || 0);
+
+    if (servingEntered > 0 && dbServingSize > 0 && dbCaloriesPerServing > 0) {
+      const calPerUnit = dbCaloriesPerServing / dbServingSize;
+      const caloriesForServing = Math.round(servingEntered * calPerUnit);
+      if (addFoodCaloriesForServingInput) {
+        addFoodCaloriesForServingInput.value = caloriesForServing.toString();
+      }
+    } else {
+      if (addFoodCaloriesForServingInput) {
+        addFoodCaloriesForServingInput.value = "";
+      }
+    }
+  }
+
+  // --- Save current serving to Logs / YYYY-MM-DD / autoID ---
+  async function saveCurrentServingToLog() {
+    if (!currentUser) return;
+    if (!addFoodFoodInput || !addFoodServingSizeInput || !addFoodCaloriesForServingInput) return;
+
+    const foodName = addFoodFoodInput.value.trim();
+    const comment = addFoodCommentInput ? addFoodCommentInput.value.trim() : "";
+    const unit = addFoodUnitInput ? addFoodUnitInput.value.trim() : "";
+    const servingSize = Number(addFoodServingSizeInput.value || 0);
+    const caloriesForServing = Number(addFoodCaloriesForServingInput.value || 0);
+
+    if (!foodName || servingSize <= 0 || caloriesForServing <= 0) {
+      alert("Please select a food and enter a valid serving.");
+      return;
+    }
+
+    const dateStr = currentDateStr || getTodayStr();
+
+    try {
+      // Ensure date subcollection exists implicitly by adding a doc
+      await db
+        .collection("Logs")
+        .doc(dateStr)
+        .collection("Entries")
+        .add({
+          Food: foodName,
+          Comment: comment,
+          Unit: unit,
+          ServingSize: servingSize,
+          CaloriesForServing: caloriesForServing,
+          Date: dateStr
+        });
+
+      // Reload logs
+      await loadLogsForDate(dateStr);
+
+      // Clear form
+      clearAddFoodForm();
+
+      // Optionally close modal
+      if (addFoodModal) {
+        addFoodModal.classList.add("hidden");
+      }
+    } catch (err) {
+      console.error("Error saving log entry:", err);
+      alert("Error saving entry.");
+    }
+  }
+
+  // --- Clear Add Food form ---
+  function clearAddFoodForm() {
+    if (addFoodFoodInput) addFoodFoodInput.value = "";
+    if (addFoodCommentInput) addFoodCommentInput.value = "";
+    if (addFoodUnitInput) addFoodUnitInput.value = "";
+    if (addFoodCaloriesPerServingInput) addFoodCaloriesPerServingInput.value = "";
+    if (addFoodServingSizeInput) addFoodServingSizeInput.value = "";
+    if (addFoodCaloriesForServingInput) addFoodCaloriesForServingInput.value = "";
+    if (foodSearchInput) foodSearchInput.value = "";
+    if (foodSearchResults) foodSearchResults.innerHTML = "";
+    currentSelectedFoodDoc = null;
+  }
+
+  // --- Load logs for a given date ---
+  async function loadLogsForDate(dateStr) {
+    if (!currentUser) return;
+    if (!mealContainer) return;
+
+    mealContainer.innerHTML = "<p class='p-4 text-sm text-gray-500'>Loading...</p>";
+
+    try {
+      const dateDocRef = db.collection("Logs").doc(dateStr);
+      const entriesRef = dateDocRef.collection("Entries");
+      const snapshot = await entriesRef.orderBy("Food").get();
+
+      if (snapshot.empty) {
+        mealContainer.innerHTML = "<p class='p-4 text-sm text-gray-500'>No entries for this date.</p>";
+        if (dailyTotalEl) dailyTotalEl.textContent = "0";
+        return;
+      }
+
+      let totalCalories = 0;
+      const list = document.createElement("div");
+      list.className = "divide-y divide-gray-200";
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const food = data.Food || "";
+        const comment = data.Comment || "";
+        const unit = data.Unit || "";
+        const servingSize = Number(data.ServingSize || 0);
+        const caloriesForServing = Number(data.CaloriesForServing || 0);
+
+        totalCalories += caloriesForServing;
+
+        const row = document.createElement("div");
+        row.className = "flex items-center justify-between px-3 py-2 text-sm";
+
+        const left = document.createElement("div");
+        left.className = "flex flex-col";
+        const line1 = document.createElement("div");
+        line1.className = "font-medium text-gray-900";
+        line1.textContent = food;
+        const line2 = document.createElement("div");
+        line2.className = "text-xs text-gray-500";
+        line2.textContent = `${servingSize} ${unit} • ${caloriesForServing} kcal` + (comment ? ` • ${comment}` : "");
+        left.appendChild(line1);
+        left.appendChild(line2);
+
+        const right = document.createElement("div");
+        right.className = "flex items-center gap-2";
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "text-xs text-red-500 hover:text-red-700";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.addEventListener("click", () => {
+          deleteLogEntry(dateStr, doc.id);
+        });
+
+        right.appendChild(deleteBtn);
+
+        row.appendChild(left);
+        row.appendChild(right);
+
+        list.appendChild(row);
+      });
+
+      mealContainer.innerHTML = "";
+      mealContainer.appendChild(list);
+
+      if (dailyTotalEl) {
+        dailyTotalEl.textContent = totalCalories.toString();
+      }
+    } catch (err) {
+      console.error("Error loading logs:", err);
+      mealContainer.innerHTML = "<p class='p-4 text-sm text-red-500'>Error loading entries.</p>";
+    }
+  }
+
+  // --- Delete a log entry ---
+  async function deleteLogEntry(dateStr, entryId) {
+    if (!currentUser) return;
+    if (!confirm("Delete this entry?")) return;
+
+    try {
+      await db
+        .collection("Logs")
+        .doc(dateStr)
+        .collection("Entries")
+        .doc(entryId)
+        .delete();
+
+      await loadLogsForDate(dateStr);
+    } catch (err) {
+      console.error("Error deleting entry:", err);
+      alert("Error deleting entry.");
+    }
+  }
+
+  // --- Modal open/close helpers (for your HTML buttons) ---
+  window.showAddFood = function () {
+    if (addFoodModal) addFoodModal.classList.remove("hidden");
+  };
+
+  window.closeAddFood = function () {
+    if (addFoodModal) addFoodModal.classList.add("hidden");
+  };
+
+  // --- Voice input stubs (you can wire real recognition here) ---
+  // fieldId: id of input to fill
+  // append: whether to append or replace
+  // callback: optional function to run after text is set (e.g., voiceFilterFoods)
+  window.voiceInput = function (fieldId, append, callback) {
+    // Stub: replace this with real Web Speech API or other voice logic.
+    // For now, just prompt.
+    const text = prompt("Voice input (stub):");
+    if (!text) return;
+    const el = document.getElementById(fieldId);
+    if (!el) return;
+    if (append && el.value) {
+      el.value = el.value + " " + text;
+    } else {
+      el.value = text;
+    }
+    if (typeof callback === "function") {
+      callback();
+    }
+  };
+
+  // Example callback used in your HTML: voiceFilterFoods
+  window.voiceFilterFoods = function () {
+    if (!foodSearchInput) return;
+    const query = foodSearchInput.value.trim().toLowerCase();
+    renderFoodSearchResults(query);
+  };
+});

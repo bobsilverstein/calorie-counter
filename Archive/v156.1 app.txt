@@ -1,0 +1,312 @@
+// app.js — v156 unified (Log + Meals + Foods)
+
+let currentDate = new Date();
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+document.addEventListener("DOMContentLoaded", () => {
+  auth.onAuthStateChanged(user => {
+    if (!user) return;
+    initApp();
+  });
+});
+
+function initApp() {
+  showLogView();
+  updateDateDisplay();
+  loadLog();
+  loadMeals();
+  loadFoods();
+}
+
+/* DATE / LOG NAV */
+
+function formatDate(d) {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function dateKey(d) {
+  return d.toISOString().split("T")[0];
+}
+
+function changeDay(offset) {
+  currentDate.setDate(currentDate.getDate() + offset);
+  updateDateDisplay();
+  loadLog();
+}
+
+function updateDateDisplay() {
+  document.getElementById("dateDisplay").textContent = formatDate(currentDate);
+}
+
+/* VIEW SWITCHING */
+
+function setActiveTab(tabId) {
+  document.getElementById("tabLog").classList.remove("active");
+  document.getElementById("tabMeals").classList.remove("active");
+  document.getElementById("tabFoods").classList.remove("active");
+  document.getElementById(tabId).classList.add("active");
+}
+
+function showLogView() {
+  document.getElementById("logView").classList.remove("hidden");
+  document.getElementById("mealsView").classList.add("hidden");
+  document.getElementById("foodsView").classList.add("hidden");
+  setActiveTab("tabLog");
+}
+
+function showMealsView() {
+  document.getElementById("logView").classList.add("hidden");
+  document.getElementById("mealsView").classList.remove("hidden");
+  document.getElementById("foodsView").classList.add("hidden");
+  setActiveTab("tabMeals");
+}
+
+function showFoodsView() {
+  document.getElementById("logView").classList.add("hidden");
+  document.getElementById("mealsView").classList.add("hidden");
+  document.getElementById("foodsView").classList.remove("hidden");
+  setActiveTab("tabFoods");
+}
+
+/* LOG DATA */
+
+async function loadLog() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const key = dateKey(currentDate);
+  const ref = db.collection("users").doc(user.uid).collection("logs").doc(key);
+  const snap = await ref.get();
+
+  let data = snap.exists ? snap.data() : {
+    Breakfast: [],
+    Lunch: [],
+    Snack: [],
+    Dinner: []
+  };
+
+  renderMeal("Breakfast", data.Breakfast);
+  renderMeal("Lunch", data.Lunch);
+  renderMeal("Snack", data.Snack);
+  renderMeal("Dinner", data.Dinner);
+
+  const total =
+    sumCalories(data.Breakfast) +
+    sumCalories(data.Lunch) +
+    sumCalories(data.Snack) +
+    sumCalories(data.Dinner);
+
+  document.getElementById("caloriesToday").textContent =
+    total + " calories today";
+}
+
+function sumCalories(arr) {
+  return arr.reduce((t, f) => t + (f.calories || 0), 0);
+}
+
+function renderMeal(mealName, foods) {
+  const totalEl = document.getElementById(mealName + "Total");
+  const listEl = document.getElementById(mealName + "Foods");
+
+  totalEl.textContent = sumCalories(foods) + " cal";
+  listEl.innerHTML = "";
+
+  foods.forEach(f => {
+    const row = document.createElement("div");
+    row.className = "foodRow";
+
+    const main = document.createElement("div");
+    main.className = "foodMain";
+
+    const nameLine = document.createElement("div");
+    nameLine.className = "foodNameLine";
+    nameLine.textContent = f.name || "(unnamed)";
+
+    const detailLine = document.createElement("div");
+    detailLine.className = "foodDetailLine";
+    detailLine.textContent =
+      (f.amount || "") +
+      (f.unit ? " " + f.unit : "") +
+      (f.brand ? " • " + f.brand : "");
+
+    main.appendChild(nameLine);
+    main.appendChild(detailLine);
+
+    const cal = document.createElement("div");
+    cal.className = "foodCalories";
+    cal.textContent = (f.calories || 0);
+
+    row.appendChild(main);
+    row.appendChild(cal);
+    listEl.appendChild(row);
+  });
+}
+
+/* ADD FOOD TO MEAL (simple prompt-based) */
+
+async function addFoodToMeal(mealName) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const name = prompt("Food name:");
+  if (!name) return;
+
+  const amountStr = prompt("Amount (e.g., 75):", "0");
+  if (amountStr === null) return;
+  const amount = parseFloat(amountStr) || 0;
+
+  const unit = prompt("Unit (g, piece…):", "g") || "";
+
+  const calStr = prompt("Calories:", "0");
+  if (calStr === null) return;
+  const calories = parseFloat(calStr) || 0;
+
+  const key = dateKey(currentDate);
+  const ref = db.collection("users").doc(user.uid).collection("logs").doc(key);
+  const snap = await ref.get();
+
+  let data = snap.exists ? snap.data() : {
+    Breakfast: [],
+    Lunch: [],
+    Snack: [],
+    Dinner: []
+  };
+
+  const entry = { name, amount, unit, calories };
+
+  if (!Array.isArray(data[mealName])) data[mealName] = [];
+  data[mealName].push(entry);
+
+  await ref.set(data);
+  loadLog();
+}
+
+/* MEALS VIEW (simple templates) */
+
+async function loadMeals() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const ref = db.collection("users").doc(user.uid).collection("meals");
+  const snap = await ref.get();
+
+  const listEl = document.getElementById("mealsList");
+  listEl.innerHTML = "";
+
+  snap.forEach(doc => {
+    const m = doc.data();
+    const row = document.createElement("div");
+    row.className = "mealTemplateRow";
+
+    const left = document.createElement("div");
+    left.textContent = m.name || "(unnamed meal)";
+
+    const right = document.createElement("div");
+    right.textContent = (m.totalCalories || 0) + " cal";
+
+    row.appendChild(left);
+    row.appendChild(right);
+    listEl.appendChild(row);
+  });
+}
+
+async function addMealTemplate() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const name = prompt("Meal template name:");
+  if (!name) return;
+
+  const ref = db.collection("users").doc(user.uid).collection("meals").doc();
+  await ref.set({
+    name,
+    totalCalories: 0
+  });
+
+  loadMeals();
+}
+
+/* FOODS VIEW */
+
+let allFoodsCache = [];
+
+async function loadFoods() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const ref = db.collection("users").doc(user.uid).collection("foods");
+  const snap = await ref.get();
+
+  allFoodsCache = [];
+  snap.forEach(doc => {
+    const f = doc.data();
+    allFoodsCache.push({
+      id: doc.id,
+      name: f.name || "",
+      calories: f.calories || 0,
+      unit: f.unit || ""
+    });
+  });
+
+  renderFoodsList(allFoodsCache);
+}
+
+function renderFoodsList(list) {
+  const listEl = document.getElementById("foodsList");
+  listEl.innerHTML = "";
+
+  list.forEach(f => {
+    const row = document.createElement("div");
+    row.className = "foodItemRow";
+
+    const left = document.createElement("div");
+    left.textContent = f.name || "(unnamed)";
+
+    const right = document.createElement("div");
+    right.textContent = f.calories + " / " + (f.unit || "unit");
+
+    row.appendChild(left);
+    row.appendChild(right);
+    listEl.appendChild(row);
+  });
+}
+
+function searchFoods() {
+  const q = (document.getElementById("foodSearchInput").value || "").toLowerCase();
+  if (!q) {
+    renderFoodsList(allFoodsCache);
+    return;
+  }
+  const filtered = allFoodsCache.filter(f =>
+    (f.name || "").toLowerCase().includes(q)
+  );
+  renderFoodsList(filtered);
+}
+
+async function addFoodItem() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const name = prompt("Food name:");
+  if (!name) return;
+
+  const unit = prompt("Unit (g, piece…):", "g") || "g";
+
+  const calStr = prompt("Calories per unit:", "0");
+  if (calStr === null) return;
+  const calories = parseFloat(calStr) || 0;
+
+  const ref = db.collection("users").doc(user.uid).collection("foods").doc();
+  await ref.set({
+    name,
+    unit,
+    calories
+  });
+
+  loadFoods();
+}

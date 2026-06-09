@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter v144</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="manifest.json" />
+</head>
+
+<body class="bg-white text-slate-900 text-base font-semibold">
+
+  <div id="app-wrapper"
+       class="max-w-sm mx-auto min-h-screen rounded-2xl border border-black overflow-hidden flex flex-col">
+
+    <!-- HEADER -->
+    <div class="p-3 rounded-t-2xl flex items-center justify-between"
+         style="background-color:#1d4ed8; color:white;">
+      <button id="prevDay" class="text-xl font-bold">◀</button>
+      <div class="text-center">
+        <div id="dayLabel" class="font-bold text-lg"></div>
+        <div id="totalCalories" class="text-sm">0 calories</div>
+      </div>
+      <button id="nextDay" class="text-xl font-bold">▶</button>
+    </div>
+
+    <!-- LOG VIEW -->
+    <div id="view-log" class="view flex-1 overflow-y-auto p-3 space-y-3">
+      <div id="mealsList" class="space-y-3"></div>
+    </div>
+
+    <!-- ADD VIEW -->
+    <div id="view-add" class="view hidden flex-1 overflow-y-auto p-3 space-y-4">
+
+      <div class="flex gap-1.5">
+        <button class="meal-toggle flex-1 py-1.5 rounded-lg border text-sm font-semibold"
+                data-meal="breakfast">Breakfast</button>
+        <button class="meal-toggle flex-1 py-1.5 rounded-lg border text-sm font-semibold"
+                data-meal="lunch">Lunch</button>
+        <button class="meal-toggle flex-1 py-1.5 rounded-lg border text-sm font-semibold"
+                data-meal="snack">Snack</button>
+        <button class="meal-toggle flex-1 py-1.5 rounded-lg border text-sm font-semibold"
+                data-meal="dinner">Dinner</button>
+      </div>
+
+      <!-- SEARCH -->
+      <div class="flex items-center gap-2">
+        <input id="addSearch" type="search" placeholder="Search foods..."
+               class="w-full border rounded px-2 py-1 text-sm" />
+        <span id="addSearchMic" class="text-xl cursor-pointer">🎙️</span>
+      </div>
+      <div id="addResults" class="space-y-1 max-h-60 overflow-y-auto"></div>
+
+      <div id="addFields" class="space-y-4 text-xs text-slate-700">
+
+        <div>
+          <input id="addFoodName" class="w-full border rounded px-2 py-1 text-sm bg-gray-100" readonly />
+          <label>Food name</label>
+        </div>
+
+        <div>
+          <input id="addComment" class="w-full border rounded px-2 py-1 text-sm bg-gray-100" readonly />
+          <label>Comment</label>
+        </div>
+
+        <div>
+          <input id="addCaloriesPerUnit" type="number" step="0.1"
+                 class="w-full border rounded px-2 py-1 text-sm bg-gray-100" readonly />
+          <label id="addCaloriesPerUnitLabel">Calories per gram</label>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <input id="addServingSize1" type="number" step="1"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+            <span id="addServingSize1Mic" class="text-xl cursor-pointer">🎙️</span>
+          </div>
+          <label>Serving size part 1</label>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <input id="addServingSize2" type="number" step="1"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+            <span id="addServingSize2Mic" class="text-xl cursor-pointer">🎙️</span>
+          </div>
+          <label>Serving size part 2</label>
+        </div>
+
+        <div>
+          <input id="addServingSize" type="number" readonly
+                 class="w-full border rounded px-2 py-1 text-sm bg-gray-100" />
+          <label>Total serving size</label>
+        </div>
+
+        <div>
+          <input id="addTotalCalories" type="number" readonly
+                 class="w-full border rounded px-2 py-1 text-sm bg-gray-100" />
+          <label>Total calories for serving</label>
+        </div>
+
+      </div>
+
+      <div class="flex gap-2 mt-4">
+        <button id="addClear"
+                class="flex-1 py-2 rounded-lg text-sm font-semibold border border-red-600 text-red-600">
+          Clear fields
+        </button>
+
+        <button id="addSave"
+                class="flex-1 py-2 rounded-lg text-sm font-semibold text-white"
+                style="background-color:#1d4ed8;">
+          Save to log
+        </button>
+      </div>
+
+      <div class="h-20"></div>
+
+    </div>
+
+    <!-- FOODS VIEW -->
+    <div id="view-foods" class="view hidden flex-1 overflow-y-auto p-3 space-y-4">
+
+      <!-- SEARCH -->
+      <div class="flex items-center gap-2">
+        <input id="foodsSearch" type="search" placeholder="Search foods..."
+               class="w-full border rounded px-2 py-1 text-sm" />
+        <span id="foodsSearchMic" class="text-xl cursor-pointer">🎙️</span>
+      </div>
+
+      <div id="foodsList" class="mt-2 border rounded divide-y max-h-32 overflow-y-auto text-sm"></div>
+
+      <div id="foodsFields" class="space-y-4 text-xs text-slate-700 mt-2">
+
+        <div>
+          <input id="foodsFoodName" class="w-full border rounded px-2 py-1 text-sm bg-gray-100" readonly />
+          <label>Food name</label>
+        </div>
+
+        <div>
+          <input id="foodsComment" class="w-full border rounded px-2 py-1 text-sm bg-gray-100" readonly />
+          <label>Comment</label>
+        </div>
+
+        <!-- UNIT BUTTONS -->
+        <div>
+          <div class="flex gap-2">
+            <button id="foodsUnitGrams" class="px-3 py-1 border rounded">grams</button>
+            <button id="foodsUnitEach" class="px-3 py-1 border rounded">each</button>
+          </div>
+          <label>Unit</label>
+        </div>
+
+        <div>
+          <input id="foodsCaloriesPerUnit" type="number" step="0.1"
+                 class="w-full border rounded px-2 py-1 text-sm bg-gray-100" readonly />
+          <label id="foodsCaloriesPerUnitLabel">Calories per gram</label>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <input id="foodsServingSize" type="number" step="1"
+                   class="w-full border rounded px-2 py-1 text-sm" />
+            <span id="foodsServingSizeMic" class="text-xl cursor-pointer">🎙️</span>
+          </div>
+          <label>Serving size</label>
+        </div>
+
+        <div>
+          <input id="foodsTotalCalories" type="number" readonly
+                 class="w-full border rounded px-2 py-1 text-sm bg-gray-100" />
+          <label>Total calories for serving</label>
+        </div>
+
+      </div>
+
+      <div class="h-20"></div>
+
+    </div>
+
+    <div class="text-center text-sm text-slate-500 font-semibold py-2">
+      <span id="versionLabel"></span>
+    </div>
+
+    <div class="border-t border-slate-300 bg-white flex items-center justify-between px-8 py-2 text-xs">
+
+      <button id="navLog" class="flex flex-col items-center gap-0.5 text-slate-700">
+        <span class="text-lg">📊</span>
+        <span>Log</span>
+      </button>
+
+      <button id="navAdd" class="flex flex-col items-center gap-0.5 text-slate-700">
+        <span class="text-lg">🍱</span>
+        <span>Meals</span>
+      </button>
+
+      <button id="navFoods" class="flex flex-col items-center gap-0.5 text-slate-700">
+        <span class="text-lg">🍽️</span>
+        <span>Foods</span>
+      </button>
+
+    </div>
+
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,425 @@
+// V144 — fixes: remove Meals unit control, working Foods search,
+// clear Foods search after selection, highlight unit buttons,
+// selectable Foods results, labels below controls.
+
+document.addEventListener("DOMContentLoaded", () => {
+  const db = firebase.firestore();
+
+  // ===== DOM LOOKUPS =====
+
+  // Views
+  const viewLog = document.getElementById("view-log");
+  const viewAdd = document.getElementById("view-add");
+  const viewFoods = document.getElementById("view-foods");
+
+  // Nav
+  const navLog = document.getElementById("navLog");
+  const navAdd = document.getElementById("navAdd");
+  const navFoods = document.getElementById("navFoods");
+
+  // Header
+  const dayLabel = document.getElementById("dayLabel");
+  const totalCalories = document.getElementById("totalCalories");
+  const prevDay = document.getElementById("prevDay");
+  const nextDay = document.getElementById("nextDay");
+
+  // Meals list (Log screen)
+  const mealsList = document.getElementById("mealsList");
+
+  // ADD SCREEN
+  const addSearch = document.getElementById("addSearch");
+  const addSearchMic = document.getElementById("addSearchMic");
+  const addResults = document.getElementById("addResults");
+
+  const addFoodName = document.getElementById("addFoodName");
+  const addComment = document.getElementById("addComment");
+
+  // Meals screen: unit removed in v144
+  const addCaloriesPerUnit = document.getElementById("addCaloriesPerUnit");
+  const addCaloriesPerUnitLabel = document.getElementById("addCaloriesPerUnitLabel");
+
+  const addServingSize1 = document.getElementById("addServingSize1");
+  const addServingSize1Mic = document.getElementById("addServingSize1Mic");
+
+  const addServingSize2 = document.getElementById("addServingSize2");
+  const addServingSize2Mic = document.getElementById("addServingSize2Mic");
+
+  const addServingSize = document.getElementById("addServingSize");
+  const addTotalCalories = document.getElementById("addTotalCalories");
+
+  const addClear = document.getElementById("addClear");
+  const addSave = document.getElementById("addSave");
+
+  // FOODS SCREEN
+  const foodsSearch = document.getElementById("foodsSearch");
+  const foodsSearchMic = document.getElementById("foodsSearchMic");
+
+  const foodsList = document.getElementById("foodsList");
+
+  const foodsFoodName = document.getElementById("foodsFoodName");
+  const foodsComment = document.getElementById("foodsComment");
+
+  const foodsUnitGrams = document.getElementById("foodsUnitGrams");
+  const foodsUnitEach = document.getElementById("foodsUnitEach");
+
+  const foodsCaloriesPerUnit = document.getElementById("foodsCaloriesPerUnit");
+  const foodsCaloriesPerUnitLabel = document.getElementById("foodsCaloriesPerUnitLabel");
+
+  const foodsServingSize = document.getElementById("foodsServingSize");
+  const foodsServingSizeMic = document.getElementById("foodsServingSizeMic");
+
+  const foodsTotalCalories = document.getElementById("foodsTotalCalories");
+
+  const versionLabel = document.getElementById("versionLabel");
+
+  // ===== VERSION TAG =====
+  const ts = new Date();
+  versionLabel.textContent =
+    "v144 " +
+    (ts.getMonth() + 1).toString().padStart(2, "0") + "/" +
+    ts.getDate().toString().padStart(2, "0") + "/" +
+    ts.getFullYear() + " " +
+    ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  // ===== STATE =====
+  let currentDate = new Date();
+  let currentMeal = "breakfast";
+  let foodsCache = [];
+
+  let addUnit = "g";     // internal only
+  let foodsUnit = "g";   // "g" or "each"
+
+  const MEALS = ["breakfast", "lunch", "snack", "dinner"];
+  const dNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // ===== VOICE INPUT =====
+  function startVoice(target, icon) {
+    const rec = new webkitSpeechRecognition();
+    rec.lang = "en-US";
+    rec.interimResults = false;
+
+    icon.textContent = "🎤";
+    rec.start();
+
+    rec.onresult = (e) => {
+      target.value = e.results[0][0].transcript;
+      icon.textContent = "🎙️";
+      target.dispatchEvent(new Event("input"));
+    };
+
+    rec.onerror = () => {
+      icon.textContent = "🎙️";
+    };
+  }
+
+  // Allowed mics
+  addSearchMic.onclick = () => startVoice(addSearch, addSearchMic);
+  addServingSize1Mic.onclick = () => startVoice(addServingSize1, addServingSize1Mic);
+  addServingSize2Mic.onclick = () => startVoice(addServingSize2, addServingSize2Mic);
+
+  foodsSearchMic.onclick = () => startVoice(foodsSearch, foodsSearchMic);
+  foodsServingSizeMic.onclick = () => startVoice(foodsServingSize, foodsServingSizeMic);
+
+  // Auto‑mic on focus (Meals)
+  addServingSize1.onfocus = () => startVoice(addServingSize1, addServingSize1Mic);
+  addServingSize2.onfocus = () => startVoice(addServingSize2, addServingSize2Mic);
+
+  // ===== DATE =====
+  function formatDate(d) {
+    return d.toISOString().split("T")[0];
+  }
+
+  function renderDate() {
+    dayLabel.textContent =
+      dNames[currentDate.getDay()] + " " +
+      (currentDate.getMonth() + 1) + "/" +
+      currentDate.getDate() + "/" +
+      currentDate.getFullYear();
+
+    loadDailyLog();
+  }
+
+  prevDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() - 1);
+    renderDate();
+  };
+
+  nextDay.onclick = () => {
+    currentDate.setDate(currentDate.getDate() + 1);
+    renderDate();
+  };
+
+  // ===== VIEW NAV =====
+  function showView(v) {
+    viewLog.classList.add("hidden");
+    viewAdd.classList.add("hidden");
+    viewFoods.classList.add("hidden");
+
+    if (v === "log") viewLog.classList.remove("hidden");
+    if (v === "add") viewAdd.classList.remove("hidden");
+    if (v === "foods") viewFoods.classList.remove("hidden");
+  }
+
+  function pushView(v) {
+    history.pushState({ view: v }, "");
+    showView(v);
+  }
+
+  window.onpopstate = () => {
+    const v = history.state?.view || "log";
+    showView(v);
+  };
+
+  navLog.onclick = () => pushView("log");
+  navAdd.onclick = () => pushView("add");
+  navFoods.onclick = () => pushView("foods");
+
+  // ===== LOAD FOODS =====
+  function loadFoods() {
+    db.collection("Foods").onSnapshot(snap => {
+      foodsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderFoodsList();
+    });
+  }
+
+  function matchesSearch(f, q) {
+    q = q.toLowerCase();
+    return (
+      (f.Food || "").toLowerCase().includes(q) ||
+      (f.Comment || "").toLowerCase().includes(q)
+    );
+  }
+
+  // ===== FOODS LIST =====
+  function renderFoodsList() {
+    const q = (foodsSearch.value || "").toLowerCase();
+    foodsList.innerHTML = "";
+
+    foodsCache
+      .filter(f => matchesSearch(f, q))
+      .forEach(f => {
+        const btn = document.createElement("button");
+        btn.className = "w-full text-left p-2 border-b bg-white";
+        btn.innerHTML = `
+          <div class="font-medium">${f.Food}</div>
+          <div class="text-sm text-slate-600">${f.Comment || ""}</div>
+        `;
+        btn.onclick = () => loadFoodIntoEditor(f);
+        foodsList.appendChild(btn);
+      });
+  }
+
+  foodsSearch.oninput = renderFoodsList;
+
+  // ===== HIGHLIGHT UNIT BUTTONS =====
+  function highlightUnitButtons() {
+    foodsUnitGrams.style.backgroundColor = foodsUnit === "g" ? "#dbeafe" : "white";
+    foodsUnitEach.style.backgroundColor = foodsUnit === "each" ? "#dbeafe" : "white";
+  }
+
+  // ===== LOAD FOOD INTO EDITOR =====
+  function loadFoodIntoEditor(f) {
+    foodsFoodName.value = f.Food;
+    foodsComment.value = f.Comment || "";
+    foodsCaloriesPerUnit.value = f.CaloriesPerUnit || 0;
+    foodsServingSize.value = f.ServingSize || 0;
+
+    foodsUnit = f.Unit || "g";
+    foodsCaloriesPerUnitLabel.textContent =
+      foodsUnit === "g" ? "Calories per gram" : "Calories per piece";
+
+    highlightUnitButtons();
+    recalcFoodsTotals();
+
+    // v144 fix: clear search results
+    foodsList.innerHTML = "";
+    foodsSearch.value = "";
+  }
+
+  // ===== UNIT BUTTON HANDLERS =====
+  foodsUnitGrams.onclick = () => {
+    foodsUnit = "g";
+    foodsCaloriesPerUnitLabel.textContent = "Calories per gram";
+    highlightUnitButtons();
+  };
+
+  foodsUnitEach.onclick = () => {
+    foodsUnit = "each";
+    foodsCaloriesPerUnitLabel.textContent = "Calories per piece";
+    highlightUnitButtons();
+  };
+
+  // ===== FOODS CALCULATIONS =====
+  function recalcFoodsTotals() {
+    const calPerUnit = Number(foodsCaloriesPerUnit.value) || 0;
+    const serving = Number(foodsServingSize.value) || 0;
+    foodsTotalCalories.value = calPerUnit * serving;
+  }
+
+  foodsServingSize.oninput = recalcFoodsTotals;
+
+  // ===== ADD CALCULATIONS =====
+  function recalcAddTotals() {
+    const calPerUnit = Number(addCaloriesPerUnit.value) || 0;
+    const s1 = Number(addServingSize1.value) || 0;
+    const s2 = Number(addServingSize2.value) || 0;
+
+    const serving = s1 + s2;
+    addServingSize.value = serving;
+
+    addTotalCalories.value = calPerUnit * serving;
+  }
+
+  addServingSize1.oninput = recalcAddTotals;
+  addServingSize2.oninput = recalcAddTotals;
+
+  // ===== CLEAR ADD FIELDS =====
+  addClear.onclick = () => {
+    addFoodName.value = "";
+    addComment.value = "";
+    addCaloriesPerUnit.value = "";
+    addServingSize1.value = "";
+    addServingSize2.value = "";
+    addServingSize.value = "";
+    addTotalCalories.value = "";
+  };
+
+  // ===== SAVE ENTRY =====
+  addSave.onclick = async () => {
+    const name = addFoodName.value.trim();
+    if (!name) return;
+
+    const calPerUnit = Number(addCaloriesPerUnit.value) || 0;
+    const serving = Number(addServingSize.value) || 0;
+    const total = calPerUnit * serving;
+
+    const entry = {
+      Food: name,
+      Comment: addComment.value.trim(),
+      Unit: addUnit,
+      CaloriesPerUnit: calPerUnit,
+      ServingSize: serving,
+      TotalCalories: total,
+      Meal: currentMeal,
+      Timestamp: Date.now()
+    };
+
+    const dateKey = formatDate(currentDate);
+
+    await db
+      .collection("DailyLog")
+      .doc(dateKey)
+      .collection("entries")
+      .add(entry);
+
+    pushView("log");
+    loadDailyLog();
+  };
+
+  // ===== LOAD DAILY LOG (shortened) =====
+  async function loadDailyLog() {
+    const dateKey = formatDate(currentDate);
+    mealsList.innerHTML = "";
+    let total = 0;
+
+    const snap = await db
+      .collection("DailyLog")
+      .doc(dateKey)
+      .collection("entries")
+      .orderBy("Timestamp")
+      .get();
+
+    const grouped = { breakfast: [], lunch: [], snack: [], dinner: [] };
+
+    snap.docs.forEach(d => {
+      const e = { id: d.id, ...d.data() };
+      const meal = (e.Meal || "breakfast").toLowerCase();
+      if (!grouped[meal]) grouped.breakfast.push(e);
+      else grouped[meal].push(e);
+      total += Number(e.TotalCalories || 0);
+    });
+
+    // ===== RENDER MEALS =====
+    MEALS.forEach(meal => {
+      const entries = grouped[meal];
+      const mealTotal = entries.reduce(
+        (sum, e) => sum + Number(e.TotalCalories || 0),
+        0
+      );
+
+      const section = document.createElement("div");
+      section.className = "border rounded p-2 space-y-2";
+
+      const header = document.createElement("div");
+      header.className = "flex justify-between items-center";
+
+      header.innerHTML = `
+        <div class="font-semibold">${meal.charAt(0).toUpperCase() + meal.slice(1)}</div>
+        <div class="text-sm font-semibold text-blue-700">${mealTotal} cal</div>
+      `;
+
+      const body = document.createElement("div");
+      body.className = "space-y-3";
+
+      entries.forEach(e => {
+        const row = document.createElement("div");
+        row.className = "border-b pb-2 space-y-2";
+
+        row.innerHTML = `
+          <div>
+            <div class="font-medium">${e.Food}</div>
+            <label class="text-xs text-slate-500">Food name</label>
+          </div>
+
+          <div>
+            <div class="text-sm text-slate-600">${e.Comment || ""}</div>
+            <label class="text-xs text-slate-500">Comment</label>
+          </div>
+
+          <div>
+            <div class="text-sm">${e.CaloriesPerUnit}</div>
+            <label class="text-xs text-slate-500">Calories per ${e.Unit === "g" ? "gram" : "piece"}</label>
+          </div>
+
+          <div>
+            <div class="text-sm">${e.ServingSize} ${e.Unit}</div>
+            <label class="text-xs text-slate-500">Serving size</label>
+          </div>
+
+          <div>
+            <div class="text-sm font-semibold text-blue-700">${e.TotalCalories} cal</div>
+            <label class="text-xs text-slate-500">Total calories</label>
+          </div>
+        `;
+
+        body.appendChild(row);
+      });
+
+      header.onclick = () => {
+        pushView("add");
+        currentMeal = meal;
+        document.querySelectorAll(".meal-toggle").forEach(b => {
+          b.style.backgroundColor = "white";
+          if (b.dataset.meal === meal) b.style.backgroundColor = "#dbeafe";
+        });
+      };
+
+      section.appendChild(header);
+      section.appendChild(body);
+      mealsList.appendChild(section);
+    });
+
+    totalCalories.textContent = `${total} calories`;
+
+    const banner = document.querySelector("div.p-3.rounded-t-2xl");
+    banner.style.backgroundColor =
+      total >= 2000 ? "#dc2626" :
+      total >= 1800 ? "#facc15" :
+      "#1d4ed8";
+  }
+
+  // ===== INIT =====
+  pushView("log");
+  loadFoods();
+  renderDate();
+});

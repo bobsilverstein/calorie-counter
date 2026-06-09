@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Calorie Counter v148</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="firebase-config.js"></script>
+  <script defer src="backup.js"></script>
+  <script defer src="app.js"></script>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <h1>Calorie Counter v148</h1>
+  </header>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <button onclick="showMeals()">Meals</button>
+    <button onclick="showFoods()">Foods</button>
+    <button onclick="showBackups()">Backups</button>
+  </nav>
+
+  <!-- MAIN VIEWS -->
+  <main>
+
+    <!-- MEALS VIEW -->
+    <section id="mealsView" class="view hidden">
+      <div class="dateBar">
+        <button onclick="prevDate()">◀</button>
+        <span id="currentDate"></span>
+        <button onclick="nextDate()">▶</button>
+      </div>
+
+      <div id="mealGroups"></div>
+
+      <button class="addBtn" onclick="openAddFood()">Add Food</button>
+    </section>
+
+    <!-- FOODS VIEW -->
+    <section id="foodsView" class="view hidden">
+      <input id="foodSearch" placeholder="Search foods…" oninput="searchFoods()" />
+      <div id="foodResults"></div>
+      <button class="addBtn" onclick="openAddFood()">Add Food</button>
+    </section>
+
+    <!-- BACKUPS VIEW -->
+    <section id="backupsView" class="view hidden">
+      <h2>Backups</h2>
+      <div id="backupList"></div>
+    </section>
+
+  </main>
+
+  <!-- ADD FOOD MODAL -->
+  <div id="addFoodModal" class="modal hidden">
+    <div class="modalContent">
+      <button class="closeBtn" onclick="closeAddFood()">✕</button>
+
+      <h3>Add Food</h3>
+
+      <input id="foodNameInput" placeholder="Food name" />
+      <input id="servingSizeInput" type="number" placeholder="Serving size" />
+      <input id="unitInput" placeholder="Unit (g, piece…)" />
+      <input id="calPerUnitInput" type="number" placeholder="Calories per unit" />
+
+      <select id="mealTypeInput">
+        <option>Breakfast</option>
+        <option>Lunch</option>
+        <option>Dinner</option>
+        <option>Snacks</option>
+      </select>
+
+      <button onclick="saveFoodToMeal()">Save</button>
+    </div>
+  </div>
+
+</body>
+</html>

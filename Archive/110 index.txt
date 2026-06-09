@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter v109</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body { margin:0; background:#f5f5f5; font-family:sans-serif; }
+
+    #appShell {
+      width:20vw; min-width:260px; max-width:420px;
+      margin:0 auto; background:white; min-height:100vh;
+      display:flex; flex-direction:column; position:relative;
+    }
+
+    #header {
+      background:#6a1b9a; color:white; padding:10px;
+      text-align:center; font-weight:bold; font-size:16px;
+    }
+
+    #todayCard {
+      margin:10px; background:#6a1b9a; color:white;
+      border-radius:8px; padding:10px 12px; text-align:center;
+    }
+    #todayCardTop {
+      display:flex; justify-content:center; align-items:center;
+      gap:12px; font-size:14px;
+    }
+    #todayCardTop .arrow { font-size:18px; cursor:pointer; }
+    #todayCalories { font-size:32px; font-weight:bold; margin-top:4px; }
+    #todayLabel { font-size:13px; opacity:0.9; }
+
+    .view { display:none; flex:1; overflow-y:auto; padding-bottom:70px; }
+    .view.active { display:block; }
+
+    .meal-bar {
+      background:#1976d2; color:white; padding:14px 12px;
+      font-weight:bold; font-size:16px;
+    }
+    .meal-items { padding:6px 12px; }
+    .meal-item { padding:4px 0; border-bottom:1px solid #eee; font-size:14px; }
+
+    .screen-header {
+      background:#6a1b9a; color:white; padding:10px;
+      font-weight:bold; display:flex; align-items:center; gap:10px;
+    }
+    .back-btn { font-size:20px; cursor:pointer; }
+
+    input {
+      width:100%; padding:10px; margin:12px 0;
+      border:1px solid #ccc; border-radius:4px; font-size:15px;
+    }
+    .food-result {
+      padding:10px 12px; border-bottom:1px solid #eee;
+      cursor:pointer; font-size:14px;
+    }
+
+    #bottomBar {
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:0; width:20vw; min-width:260px; max-width:420px;
+      background:white; border-top:1px solid #ddd;
+      display:flex; justify-content:space-around; align-items:center;
+      padding:6px 0 4px;
+    }
+    .bb-item {
+      background:none; border:none; display:flex;
+      flex-direction:column; align-items:center;
+      font-size:12px; color:#444; cursor:pointer;
+    }
+    .bb-icon { font-size:20px; margin-bottom:2px; }
+
+    .plusCircle {
+      width:48px; height:48px; background:#6a1b9a;
+      border-radius:50%; color:white; font-size:30px;
+      display:flex; align-items:center; justify-content:center;
+      margin-top:-18px; cursor:pointer;
+    }
+
+    #versionTag {
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:58px; font-size:11px; color:#777;
+      width:20vw; min-width:260px; max-width:420px;
+      text-align:center;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="appShell">
+
+    <div id="header"><span id="dateLabel"></span></div>
+
+    <div id="todayCard">
+      <div id="todayCardTop">
+        <span class="arrow" id="prevDay">◀</span>
+        <span>Today</span>
+        <span class="arrow" id="nextDay">▶</span>
+      </div>
+      <div id="todayCalories">0</div>
+      <div id="todayLabel">calories today</div>
+    </div>
+
+    <div id="logView" class="view active"></div>
+
+    <div id="addFoodView" class="view">
+      <div class="screen-header">
+        <span class="back-btn" id="backFromAdd">←</span>
+        Add Food to Log
+      </div>
+      <div style="padding:12px;">
+        <input id="addFoodSearch" placeholder="Search foods…">
+        <div id="addFoodResults"></div>
+      </div>
+    </div>
+
+    <div id="foodsView" class="view">
+      <div class="screen-header">
+        <span class="back-btn" id="backFromFoods">←</span>
+        Foods
+      </div>
+      <div style="padding:12px;">
+        <input id="foodsSearch" placeholder="Search foods…">
+        <div id="foodsList"></div>
+        <button id="openFoodMgmt" class="secondary-btn">Manage Foods</button>
+      </div>
+    </div>
+
+    <div id="foodMgmtView" class="view">
+      <div class="screen-header">
+        <span class="back-btn" id="backFromFoodMgmt">←</span>
+        Food Management
+      </div>
+      <div style="padding:12px; font-size:14px;">
+        <p>Food management screen.</p>
+      </div>
+    </div>
+
+    <div id="servingView" class="view">
+      <div class="screen-header">
+        <span class="back-btn" id="backFromServing">←</span>
+        Servings
+      </div>
+      <div style="padding:12px; font-size:14px;">
+        <div id="servingFoodName" style="font-weight:bold; margin-bottom:6px;"></div>
+        <label>Servings:
+          <input id="servingCount" type="number" min="0" step="0.25" value="1">
+        </label>
+        <button id="applyServing" class="primary-btn">Apply to log</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="versionTag"></div>
+
+  <div id="bottomBar">
+    <button id="navLog" class="bb-item">
+      <span class="bb-icon">📊</span><span>Log</span>
+    </button>
+
+    <button id="navAdd"><div class="plusCircle">+</div></button>
+
+    <button id="navFoods" class="bb-item">
+      <span class="bb-icon">⚙️</span><span>Foods</span>
+    </button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

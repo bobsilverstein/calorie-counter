@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Calorie Counter v155</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+<div id="appContainer">
+
+  <div id="header">
+    <button id="prevDay" onclick="changeDay(-1)">◀</button>
+    <div id="dateDisplay"></div>
+    <button id="nextDay" onclick="changeDay(1)">▶</button>
+  </div>
+
+  <div id="caloriesToday"></div>
+
+  <div class="mealBlock" onclick="openMeal('Breakfast')">
+    <h3>Breakfast</h3>
+    <div class="mealCalories" id="BreakfastCalories">0 cal</div>
+  </div>
+
+  <div class="mealBlock" onclick="openMeal('Lunch')">
+    <h3>Lunch</h3>
+    <div class="mealCalories" id="LunchCalories">0 cal</div>
+  </div>
+
+  <div class="mealBlock" onclick="openMeal('Snack')">
+    <h3>Snack</h3>
+    <div class="mealCalories" id="SnackCalories">0 cal</div>
+  </div>
+
+  <div class="mealBlock" onclick="openMeal('Dinner')">
+    <h3>Dinner</h3>
+    <div class="mealCalories" id="DinnerCalories">0 cal</div>
+  </div>
+
+</div>
+
+<div id="bottomNav">
+  <button onclick="showLog()">🏠</button>
+  <button onclick="showMeals()">🍽</button>
+  <button onclick="showFoods()">🗂</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script defer src="firebase-config.js"></script>
+<script defer src="app.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter v111</title>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body { margin:0; background:#f5f5f5; font-family:sans-serif; }
+
+    #appShell {
+      width:24vw; min-width:300px; max-width:520px;
+      margin:0 auto; background:white; min-height:100vh;
+      display:flex; flex-direction:column; position:relative;
+    }
+
+    /* TODAY BOX */
+    #todayCard {
+      margin:10px; background:#6a1b9a; color:white;
+      border-radius:8px; padding:14px 12px; text-align:center;
+    }
+    #todayCardTop {
+      display:flex; justify-content:center; align-items:center;
+      gap:14px; font-size:16px;
+    }
+    #todayCardTop .arrow { font-size:20px; cursor:pointer; }
+    #todayCalories { font-size:40px; font-weight:bold; margin-top:6px; }
+    #todayLabel { font-size:14px; opacity:0.9; }
+
+    .view { display:none; flex:1; overflow-y:auto; padding-bottom:90px; }
+    .view.active { display:block; }
+
+    /* MEALS */
+    .meal-block { padding:12px; }
+    .meal-title { font-size:18px; font-weight:bold; }
+    .meal-add { font-size:13px; color:#555; margin-top:2px; cursor:pointer; }
+
+    /* VERSION */
+    #versionTag {
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:70px; width:24vw; min-width:300px; max-width:520px;
+      text-align:center; font-size:16px; font-weight:bold;
+      color:#444; line-height:1.6;
+    }
+
+    /* BOTTOM BAR */
+    #bottomBar {
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:0; width:24vw; min-width:300px; max-width:520px;
+      background:white; border-top:1px solid #ddd;
+      display:flex; justify-content:space-around; align-items:center;
+      padding:6px 0 4px;
+    }
+    .bb-item {
+      background:none; border:none; display:flex;
+      flex-direction:column; align-items:center;
+      font-size:12px; color:#444; cursor:pointer;
+    }
+    .bb-icon { font-size:20px; margin-bottom:2px; }
+
+    .plusCircle {
+      width:24px; height:24px; background:#6a1b9a;
+      border-radius:50%; color:white; font-size:16px;
+      display:flex; align-items:center; justify-content:center;
+      margin-top:-10px; cursor:pointer;
+    }
+
+    /* INPUTS */
+    input, select {
+      width:100%; padding:10px; margin:10px 0;
+      border:1px solid #ccc; border-radius:4px; font-size:15px;
+    }
+    .toggleRow { display:flex; gap:10px; margin:10px 0; }
+    .toggleRow button {
+      flex:1; padding:10px; border:1px solid #aaa;
+      background:#eee; cursor:pointer; border-radius:4px;
+    }
+    .toggleRow .active { background:#6a1b9a; color:white; border-color:#6a1b9a; }
+
+    .food-result {
+      padding:10px 12px; border-bottom:1px solid #eee;
+      cursor:pointer; font-size:14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="appShell">
+
+    <!-- TODAY BOX -->
+    <div id="todayCard">
+      <div id="todayCardTop">
+        <span class="arrow" id="prevDay">◀</span>
+        <span>Today</span>
+        <span class="arrow" id="nextDay">▶</span>
+      </div>
+      <div id="todayCalories">0</div>
+      <div id="todayLabel">calories today</div>
+    </div>
+
+    <!-- MAIN SCREEN -->
+    <div id="mainView" class="view active">
+
+      <div class="meal-block">
+        <div class="meal-title">Breakfast</div>
+        <div class="meal-add" data-meal="Breakfast">Add Breakfast</div>
+      </div>
+
+      <div class="meal-block">
+        <div class="meal-title">Lunch</div>
+        <div class="meal-add" data-meal="Lunch">Add Lunch</div>
+      </div>
+
+      <div class="meal-block">
+        <div class="meal-title">Snack</div>
+        <div class="meal-add" data-meal="Snack">Add Snack</div>
+      </div>
+
+      <div class="meal-block">
+        <div class="meal-title">Dinner</div>
+        <div class="meal-add" data-meal="Dinner">Add Dinner</div>
+      </div>
+
+    </div>
+
+    <!-- ADD FOOD -->
+    <div id="addFoodView" class="view">
+      <div style="padding:12px; font-weight:bold; font-size:18px;">Add Food</div>
+
+      <div style="padding:12px;">
+        <input id="afSearch" placeholder="Search">
+        <input id="afFood" placeholder="Food">
+        <input id="afComment" placeholder="Comment">
+
+        <select id="afMeal">
+          <option>Breakfast</option>
+          <option>Lunch</option>
+          <option>Snack</option>
+          <option>Dinner</option>
+        </select>
+
+        <div class="toggleRow">
+          <button id="afGramBtn" class="active">grams</button>
+          <button id="afEachBtn">each</button>
+        </div>
+
+        <input id="afServingSize" placeholder="Serving size">
+        <input id="afCalPerUnit" placeholder="Calories per gram/each">
+        <input id="afCalPerServing" placeholder="Calories per serving" readonly>
+
+        <button id="afSave" style="padding:12px; width:100%; background:#6a1b9a; color:white; border:none; border-radius:4px; font-size:16px;">Save</button>
+      </div>
+    </div>
+
+    <!-- FOODS -->
+    <div id="foodsView" class="view">
+      <div style="padding:12px; font-weight:bold; font-size:18px;">Foods</div>
+      <div style="padding:12px;">
+        <input id="foodsSearch" placeholder="Search foods…">
+        <div id="foodsList"></div>
+        <button id="openFoodMgmt" style="margin-top:10px; padding:10px; width:100%;">Manage Foods</button>
+      </div>
+    </div>
+
+    <!-- FOOD MANAGEMENT -->
+    <div id="foodMgmtView" class="view">

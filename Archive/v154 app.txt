@@ -1,0 +1,159 @@
+// v154 — full app.js with arrows, hide-right-arrow-on-today, v147 layout restored
+
+let currentDate = new Date().toISOString().slice(0,10);
+
+function hideAll() {
+  document.getElementById("logView").classList.add("hidden");
+  document.getElementById("foodsView").classList.add("hidden");
+}
+
+function showLog() {
+  hideAll();
+  document.getElementById("logView").classList.remove("hidden");
+  loadLog(currentDate);
+}
+
+function showFoods() {
+  hideAll();
+  document.getElementById("foodsView").classList.remove("hidden");
+  searchFoods();
+}
+
+function openAddFood() {
+  document.getElementById("addFoodModal").classList.remove("hidden");
+}
+
+function closeAddFood() {
+  document.getElementById("addFoodModal").classList.add("hidden");
+}
+
+function formatDateLong(dateStr) {
+  const d = new Date(dateStr);
+  const weekday = d.toLocaleDateString(undefined, { weekday: "long" });
+  const month = d.toLocaleDateString(undefined, { month: "long" });
+  const day = d.getDate();
+  const year = d.getFullYear();
+  return `${weekday} ${month} ${day}, ${year}`;
+}
+
+function updateArrows() {
+  const today = new Date().toISOString().slice(0,10);
+  const right = document.getElementById("rightArrow");
+
+  if (currentDate >= today) {
+    right.style.visibility = "hidden";
+  } else {
+    right.style.visibility = "visible";
+  }
+}
+
+function prevDate() {
+  const d = new Date(currentDate);
+  d.setDate(d.getDate() - 1);
+  currentDate = d.toISOString().slice(0,10);
+  loadLog(currentDate);
+}
+
+function nextDate() {
+  const today = new Date().toISOString().slice(0,10);
+  if (currentDate >= today) return; // hidden arrow prevents this anyway
+  const d = new Date(currentDate);
+  d.setDate(d.getDate() + 1);
+  currentDate = d.toISOString().slice(0,10);
+  loadLog(currentDate);
+}
+
+async function loadLog(dateStr) {
+  document.getElementById("currentDate").textContent = formatDateLong(dateStr);
+  updateArrows();
+
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(dateStr).collection("entries");
+  const snap = await ref.get();
+
+  const totals = { Breakfast: 0, Lunch: 0, Snack: 0, Dinner: 0 };
+
+  snap.forEach(doc => {
+    const d = doc.data();
+    const key = d.MealType;
+    if (totals.hasOwnProperty(key)) {
+      totals[key] += Math.round(d.TotalCalories || 0);
+    }
+  });
+
+  const mealList = document.getElementById("mealList");
+  mealList.innerHTML = "";
+
+  const order = ["Breakfast", "Lunch", "Snack", "Dinner"];
+  order.forEach(name => {
+    const row = document.createElement("div");
+    row.className = "mealRow";
+    row.innerHTML = `
+      <span>${name}</span>
+      <span>${totals[name]} cal</span>
+    `;
+    mealList.appendChild(row);
+  });
+
+  const totalToday = order.reduce((s, k) => s + totals[k], 0);
+  document.getElementById("totalCaloriesToday").textContent = totalToday;
+}
+async function saveFoodToMeal() {
+  const name = document.getElementById("foodNameInput").value.trim();
+  const size = Number(document.getElementById("servingSizeInput").value);
+  const unit = document.getElementById("unitInput").value.trim();
+  const cal = Number(document.getElementById("calPerUnitInput").value);
+  const mealType = document.getElementById("mealTypeInput").value;
+
+  if (!name || !size || !unit || !cal) return;
+
+  const total = Math.round(size * cal);
+
+  const db = firebase.firestore();
+  const ref = db.collection("DailyLog").doc(currentDate).collection("entries").doc();
+
+  await ref.set({
+    Food: name,
+    ServingSize: size,
+    Unit: unit,
+    CaloriesPerUnit: cal,
+    TotalCalories: total,
+    MealType: mealType,
+    Timestamp: new Date().toISOString()
+  });
+
+  closeAddFood();
+  loadLog(currentDate);
+}
+
+async function searchFoods() {
+  const q = document.getElementById("foodSearch").value.trim().toLowerCase();
+  const db = firebase.firestore();
+  const snap = await db.collection("Foods").get();
+
+  const results = [];
+  snap.forEach(doc => {
+    const d = doc.data();
+    if ((d.Name || "").toLowerCase().includes(q)) results.push(d);
+  });
+
+  renderFoodResults(results.slice(0, 6));
+}
+
+function renderFoodResults(list) {
+  const out = document.getElementById("foodResults");
+  out.innerHTML = "";
+
+  list.forEach(f => {
+    const isPiece = (f.Unit || "").toLowerCase() === "piece" || (f.Unit || "").toLowerCase() === "each";
+    const cal = isPiece ? Math.round(f.CaloriesPerUnit) : Number(f.CaloriesPerUnit).toFixed(2);
+
+    const row = document.createElement("div");
+    row.textContent = `${f.Name} — ${cal} cal/${f.Unit}`;
+    out.appendChild(row);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  showLog();
+});

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calorie Counter v147</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-100 text-slate-900">
+
+  <!-- TOP NAV -->
+  <div class="fixed top-0 left-0 right-0 bg-blue-600 text-white p-3 flex justify-between items-center z-20">
+    <div class="flex gap-3">
+      <button id="navLog" class="font-semibold">Log</button>
+      <button id="navAdd" class="font-semibold">Add</button>
+      <button id="navFoods" class="font-semibold">Foods</button>
+    </div>
+    <div id="versionLabel" class="text-xs opacity-80"></div>
+  </div>
+
+  <div class="pt-16 pb-10 max-w-md mx-auto">
+
+    <!-- LOG VIEW -->
+    <div id="view-log">
+      <div class="bg-white p-3 rounded shadow mb-3 flex justify-between items-center">
+        <button id="prevDay" class="px-2 py-1 bg-slate-200 rounded">◀</button>
+        <div id="dayLabel" class="font-semibold"></div>
+        <button id="nextDay" class="px-2 py-1 bg-slate-200 rounded">▶</button>
+      </div>
+
+      <div class="bg-white p-3 rounded shadow mb-3">
+        <div class="text-center text-xl font-bold mb-1" id="totalCalories">0</div>
+        <div class="text-center text-xs text-slate-500">calories today</div>
+      </div>
+
+      <div id="mealsList" class="space-y-2"></div>
+    </div>
+
+    <!-- ADD VIEW -->
+    <div id="view-add" class="hidden space-y-3">
+
+      <div class="bg-white p-3 rounded shadow">
+        <input id="addSearch" placeholder="Search foods…" class="w-full border p-2 rounded text-sm" />
+        <div id="addResults" class="mt-2 max-h-40 overflow-y-auto"></div>
+      </div>
+
+      <div class="bg-white p-3 rounded shadow space-y-2">
+        <input id="addFoodName" placeholder="Food name" class="w-full border p-2 rounded text-sm" />
+        <input id="addComment" placeholder="Comment" class="w-full border p-2 rounded text-sm" />
+
+        <div class="flex gap-2">
+          <input id="addCaloriesPerUnit" placeholder="cal per g" class="border p-2 rounded w-1/3 text-sm" />
+          <input id="addServingSize1" placeholder="A" class="border p-2 rounded w-1/3 text-sm" />
+          <input id="addServingSize2" placeholder="B" class="border p-2 rounded w-1/3 text-sm" />
+        </div>
+
+        <input id="addServingSize" readonly class="border p-2 rounded w-full text-sm bg-slate-100" />
+        <input id="addTotalCalories" readonly class="border p-2 rounded w-full text-sm bg-slate-100" />
+
+        <div class="flex gap-2">
+          <button id="addClear" class="flex-1 bg-slate-200 p-2 rounded text-sm">Clear</button>
+          <button id="addSave" class="flex-1 bg-blue-600 text-white p-2 rounded text-sm">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOODS VIEW -->
+    <div id="view-foods" class="hidden space-y-3">
+
+      <div class="bg-white p-3 rounded shadow">
+        <input id="foodsSearch" placeholder="Search foods…" class="w-full border p-2 rounded text-sm" />
+        <div id="foodsList" class="mt-2 max-h-40 overflow-y-auto"></div>
+      </div>
+
+      <div class="bg-white p-3 rounded shadow space-y-2">
+        <input id="foodsFoodName" placeholder="Food name" class="w-full border p-2 rounded text-sm" />
+        <input id="foodsComment" placeholder="Comment" class="w-full border p-2 rounded text-sm" />
+
+        <div class="flex gap-2">
+          <button id="foodsUnitGrams" class="flex-1 border p-2 rounded text-sm">g</button>
+          <button id="foodsUnitEach" class="flex-1 border p-2 rounded text-sm">each</button>
+        </div>
+
+        <input id="foodsServingSize" placeholder="Serving size" class="w-full border p-2 rounded text-sm" />
+        <input id="foodsTotalCalories" placeholder="Total calories" class="w-full border p-2 rounded text-sm" />
+
+        <div class="flex gap-2">
+          <button id="foodsClear" class="flex-1 bg-slate-200 p-2 rounded text-sm">Clear</button>
+          <button id="foodsArchive" class="flex-1 bg-yellow-500 text-white p-2 rounded text-sm">Archive</button>
+          <button id="foodsSave" class="flex-1 bg-blue-600 text-white p-2 rounded text-sm">Save</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
