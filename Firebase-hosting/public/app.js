@@ -919,7 +919,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFoods();
   renderDate();
   loadMostRecentWeight();
-}
+});
 
 // (your existing app.js code above)
 
