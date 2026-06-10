@@ -1,4 +1,3 @@
-fl922// 🔥 PERMANENTLY DISABLE ALL SERVICE WORKERS — KILL + BLOCK 🔥
 if ("serviceWorker" in navigator) {
   // Kill all existing SWs
   navigator.serviceWorker.getRegistrations().then(regs => {
