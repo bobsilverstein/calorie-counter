@@ -1,3 +1,27 @@
+/* VERSION PLACEHOLDER — DO NOT REMOVE */
+const versionNumber = "V ???"; // deploy.bat overwrites this line
+
+function updateVersionLabel() {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const yyyy = now.getFullYear();
+
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  const time = `${hours}:${minutes} ${ampm}`;
+
+  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
+
+  document.getElementById("versionLabel").textContent = fullVersion;
+  document.getElementById("pageTitle").textContent =
+    `Calorie Counter — ${fullVersion}`;
+}
+
+updateVersionLabel();
+
 if ("serviceWorker" in navigator) {
   // Kill all existing SWs
   navigator.serviceWorker.getRegistrations().then(regs => {
@@ -935,7 +959,20 @@ function updateVersionLabel() {
   const time = `${hours}:${minutes} ${ampm}`;
 
   // deploy.bat overwrites this line
-  const versionNumber = "V 189";
+/* VERSION PLACEHOLDER — DO NOT REMOVE */
+const versionNumber = "V ???"; // deploy.bat overwrites this line
+
+function updateVersionLabel() {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const yyyy = now.getFullYear();
+
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  const time = `${hours}:${minutes} ${ampm}`;
 
   const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
 
@@ -948,6 +985,4 @@ function updateVersionLabel() {
 }
 
 updateVersionLabel();
-
-
 
