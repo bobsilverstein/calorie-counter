@@ -109,18 +109,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const shabbatCandles = document.getElementById("shabbatCandles");
   const shabbatParsha  = document.getElementById("shabbatParsha");
 
-  // version with time
-  const ts = new Date();
-  const hh = ts.getHours();
-  const h12 = ((hh + 11) % 12) + 1;
-  const mm = ts.getMinutes().toString().padStart(2,"0");
-  const ampm = hh >= 12 ? "PM" : "AM";
-  versionLabel.textContent =
-    "v188 " +
-    (ts.getMonth()+1).toString().padStart(2,"0") + "/" +
-    ts.getDate().toString().padStart(2,"0") + "/" +
-    ts.getFullYear() + " " +
-    h12 + ":" + mm + " " + ampm;
+ /* VERSION PLACEHOLDER — DO NOT REMOVE */
+const versionNumber = "V ???"; // deploy.bat overwrites this line
+
+function updateVersionLabel() {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const yyyy = now.getFullYear();
+
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  const time = `${hours}:${minutes} ${ampm}`;
+
+  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
+
+  document.getElementById("versionLabel").textContent = fullVersion;
+  document.getElementById("pageTitle").textContent =
+    `Calorie Counter — ${fullVersion}`;
+}
+
+updateVersionLabel();
 
   // state
   let currentDate = new Date();
