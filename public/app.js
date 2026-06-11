@@ -1,5 +1,4 @@
 /* VERSION PLACEHOLDER — DO NOT REMOVE */
-const versionNumber = "V ???"; // deploy.bat overwrites this line
 
 function updateVersionLabel() {
   const now = new Date();
@@ -19,8 +18,6 @@ function updateVersionLabel() {
   document.getElementById("pageTitle").textContent =
     `Calorie Counter — ${fullVersion}`;
 }
-
-updateVersionLabel();
 
 if ("serviceWorker" in navigator) {
   // Kill all existing SWs
@@ -927,62 +924,29 @@ document.addEventListener("DOMContentLoaded", () => {
   loadMostRecentWeight();
 });
 
-/* END v188 CHUNK 3 */
-
-// UPC buttons
-  if (scanUpcBtn){
-    scanUpcBtn.onclick  = () => openUpcScanner();
-  }
-  if (upcCloseBtn){
-    upcCloseBtn.onclick = () => closeUpcModal();
-  }
-
-  // init
-  pushView("log");
-  loadFoods();
-  renderDate();
-  loadMostRecentWeight();
-
-// (your existing app.js code above)
-
-function updateVersionLabel() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const yyyy = now.getFullYear();
-
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-
-  const time = `${hours}:${minutes} ${ampm}`;
-
-  // deploy.bat overwrites this line
 /* VERSION PLACEHOLDER — DO NOT REMOVE */
 const versionNumber = "V ???"; // deploy.bat overwrites this line
 
 function updateVersionLabel() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const yyyy = now.getFullYear();
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const yyyy = now.getFullYear();
 
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-  const time = `${hours}:${minutes} ${ampm}`;
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    const time = `${hours}:${minutes} ${ampm}`;
 
-  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
+    const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
 
-  // Footer
-  document.getElementById("versionLabel").textContent = fullVersion;
+    // Footer
+    document.getElementById("versionLabel").textContent = fullVersion;
 
-  // Title
-  document.getElementById("pageTitle").textContent =
-    `Calorie Counter — ${fullVersion}`;
+    // Title
+    document.getElementById("pageTitle").textContent =
+        `Calorie Counter — ${fullVersion}`;
 }
 
 updateVersionLabel();
-
