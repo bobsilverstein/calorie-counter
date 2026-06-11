@@ -401,41 +401,45 @@ updateVersionLabel();
     }
   }
 
-  async function loadShabbatInfo(date){
-    if (date.getDay() !== 5){
-      if (shabbatInfo) shabbatInfo.classList.add("hidden");
-      return;
-    }
-
-    if (!shabbatInfo || !shabbatCandles || !shabbatParsha) return;
-
-    const key = fmt(date);
-    const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&start=${key}&end=${key}`;
-
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      const items = data.items || [];
-
-      const candles = items.find(i => i.category === "candles");
-      const parsha  = items.find(i => i.category === "parashat");
-
-      shabbatCandles.textContent =
-        candles
-          ? `Candle lighting (${data.location?.title || "Location"}): ${candles.title}`
-          : "";
-      shabbatParsha.textContent =
-        parsha ? `Parsha: ${parsha.hebrew || parsha.title}` : "";
-
-      if (!shabbatCandles.textContent && !shabbatParsha.textContent){
-        shabbatInfo.classList.add("hidden");
-      } else {
-        shabbatInfo.classList.remove("hidden");
-      }
-    } catch {
-      shabbatInfo.classList.add("hidden");
-    }
+ async function loadShabbatInfo(date){
+  if (date.getDay() !== 5){
+    if (shabbatInfo) shabbatInfo.classList.add("hidden");
+    return;
   }
+
+  if (!shabbatInfo || !shabbatCandles || !shabbatParsha) return;
+
+  const key = fmt(date);
+  const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&start=${key}&end=${key}`;
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const items = data.items || [];
+
+    const candles = items.find(i => i.category === "candles");
+    const parsha  = items.find(i => i.category === "parashat");
+
+    shabbatCandles.textContent =
+      candles
+        ? `Candle lighting (${data.location?.title || "Location"}): ${candles.title}`
+        : "";
+
+    shabbatParsha.textContent =
+      parsha
+        ? `Parsha: ${parsha.hebrew} / ${parsha.title}`
+        : "";
+
+    if (!shabbatCandles.textContent && !shabbatParsha.textContent){
+      shabbatInfo.classList.add("hidden");
+    } else {
+      shabbatInfo.classList.remove("hidden");
+    }
+  } catch {
+    shabbatInfo.classList.add("hidden");
+  }
+}
+
 
   function renderDate(){
     suppressSave = true;
@@ -879,7 +883,7 @@ updateVersionLabel();
     }
 
     alert("Restore complete.");
-    loadFoods();
+    // loadFoods();  // disable auto-load of food list
     loadLog();
   }
 
@@ -924,7 +928,7 @@ updateVersionLabel();
 
   // init
   pushView("log");
-  loadFoods();
+  // loadFoods();  // disable auto-load of food list
   renderDate();
   loadMostRecentWeight();
 });
