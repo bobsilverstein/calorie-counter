@@ -458,9 +458,6 @@ document.addEventListener("DOMContentLoaded", () => {
     pushView("log");
   };
 
-/* END v188 CHUNK 1 */
-/* START v188 CHUNK 2 */
-
   // foods
   function loadFoods(){
     db.collection("Foods").onSnapshot(s=>{
@@ -810,9 +807,6 @@ document.addEventListener("DOMContentLoaded", () => {
     XLSX.writeFile(wb, `backup-${key}.xlsx`);
   }
 
-/* END v188 CHUNK 2 */
-/* START v188 CHUNK 3 */
-
   // restore tool
   document.getElementById("restoreBackup").onclick = restoreBackup;
 
@@ -928,25 +922,22 @@ document.addEventListener("DOMContentLoaded", () => {
 const versionNumber = "V ???"; // deploy.bat overwrites this line
 
 function updateVersionLabel() {
-    const now = new Date();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const yyyy = now.getFullYear();
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const yyyy = now.getFullYear();
 
-    let hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    const time = `${hours}:${minutes} ${ampm}`;
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  const time = `${hours}:${minutes} ${ampm}`;
 
-    const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
+  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
 
-    // Footer
-    document.getElementById("versionLabel").textContent = fullVersion;
-
-    // Title
-    document.getElementById("pageTitle").textContent =
-        `Calorie Counter — ${fullVersion}`;
+  document.getElementById("versionLabel").textContent = fullVersion;
+  document.getElementById("pageTitle").textContent =
+    `Calorie Counter — ${fullVersion}`;
 }
 
 updateVersionLabel();
