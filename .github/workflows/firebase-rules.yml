@@ -7,9 +7,10 @@
 # therefore gated behind workflow_dispatch (manual) and MUST NOT be wired to run
 # automatically until an auth model exists and the rules have been reviewed.
 #
-# It also requires that firestore.rules and firestore.indexes.json actually
-# exist in the repo (they do not as of this writing) and that firebase.json
-# references them. The job no-ops with a clear message if they are missing.
+# Both firestore.rules and firestore.indexes.json already exist in the repo.
+# firebase.json must also reference them (add a "firestore" block) for the
+# deploy to work. The job exits with a clear error (it does NOT silently no-op)
+# if either file is missing.
 name: Deploy Firestore Rules & Indexes (manual)
 
 on:

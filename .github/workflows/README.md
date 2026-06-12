@@ -131,9 +131,12 @@ roles** beyond Hosting:
 - **Firebase Rules Admin** (`roles/firebaserules.admin`)
 - **Cloud Datastore Index Admin** (`roles/datastore.indexAdmin`)
 
-The job no-ops with a clear error if `firestore.rules` /
-`firestore.indexes.json` are missing (they do not exist in the repo yet) — create
-them and reference them in `firebase.json` before using this workflow.
+The job exits with a clear error if `firestore.rules` / `firestore.indexes.json`
+are missing. Both files **already exist** in the repo, but `firebase.json` does
+not yet reference them (it needs a `"firestore"` block) — add that before using
+this workflow. Just as important: **do not deploy the current rules yet** — they
+require an auth model the app does not have, so deploying them as-is would lock
+everyone out.
 
 ## What the maintainer must do (checklist)
 
@@ -146,7 +149,6 @@ them and reference them in `firebase.json` before using this workflow.
       happen via reviewed PRs.
 - [ ] Push branches to this repo (not a fork) when you want a PR preview.
 - [ ] To release a new version number, bump `version.txt` and merge to `main`.
-- [ ] Delete the obsolete, corrupted `deploy.bat`.
 - [ ] Only if/when you have Firestore rules: add the two extra IAM roles to the
       service account, create `firestore.rules` + `firestore.indexes.json`, then
       run the **Deploy Firestore Rules & Indexes (manual)** workflow.
