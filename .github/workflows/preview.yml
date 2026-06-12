@@ -1,0 +1,82 @@
+# Deploy the static site to a temporary Firebase Hosting PREVIEW channel for
+# each pull request, so reviewers get a live throwaway URL. The deploy action
+# posts/updates a PR comment with the preview link.
+#
+# FORK PRs ARE SKIPPED ON PURPOSE.
+#   - On `pull_request` from a fork, GitHub does NOT expose repo secrets to the
+#     runner (by design), so firebaseServiceAccount would be empty and the
+#     deploy would fail. We therefore guard the deploy on the PR head coming
+#     from THIS repository.
+#   - We intentionally do NOT use `pull_request_target` (which would expose
+#     secrets to untrusted fork code). Safety over convenience for a personal
+#     app. A maintainer can always push the branch to this repo to get a
+#     preview, or just rely on the live deploy after merge.
+name: Deploy PR Preview to Firebase Hosting
+
+on:
+  pull_request:
+    branches: [main]
+
+# Least privilege:
+#   contents: read        -> check out the code
+#   checks: write         -> the deploy action reports a check run
+#   pull-requests: write  -> the deploy action comments the preview URL on the PR
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+# One preview deploy per PR; cancel a superseded run when new commits arrive.
+concurrency:
+  group: firebase-hosting-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Stamp version and deploy preview
+    runs-on: ubuntu-latest
+    # Skip entirely for PRs originating from a fork (no secret access).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout
+        # actions/checkout v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Stamp app version into public/app.js
+        # Same contract as the live deploy. On a PR the short SHA is the PR head
+        # commit, so the preview's displayed version matches what is deployed.
+        run: |
+          set -euo pipefail
+
+          VERSION_NUM="$(tr -cd '0-9' < version.txt)"
+          if [ -z "${VERSION_NUM}" ]; then
+            echo "::error file=version.txt::version.txt does not contain an integer"
+            exit 1
+          fi
+
+          DATE_UTC="$(date -u +%Y-%m-%d)"
+          SHORT_SHA="$(git rev-parse --short HEAD)"
+          APP_VERSION="V ${VERSION_NUM} · ${DATE_UTC} · ${SHORT_SHA} (preview)"
+          echo "Stamping version: ${APP_VERSION}"
+
+          if ! grep -q '__APP_VERSION__' public/app.js; then
+            echo "::error file=public/app.js::__APP_VERSION__ token not found in public/app.js"
+            exit 1
+          fi
+
+          sed -i "s#__APP_VERSION__#${APP_VERSION}#g" public/app.js
+
+          echo "Resulting versionNumber line(s):"
+          grep -n 'versionNumber' public/app.js || true
+
+      - name: Deploy to Firebase Hosting (preview channel)
+        # FirebaseExtended/action-hosting-deploy v0.10.0
+        # Omitting channelId makes the action create/update an auto-named
+        # preview channel for this PR and comment the temporary URL.
+        # Preview channels auto-expire (default 7 days).
+        uses: FirebaseExtended/action-hosting-deploy@e2eda2e106cfa35cdbcf4ac9ddaf6c4756df2c8c
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CALORIE_COUNTER_CDCBE }}
+          projectId: calorie-counter-cdcbe
+          expires: 7d
