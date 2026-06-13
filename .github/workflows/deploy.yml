@@ -1,9 +1,10 @@
 # Deploy the static site in public/ to the Firebase Hosting LIVE channel.
 # Trigger: every push to main (this is the production deploy).
 #
-# There is no build step — it is plain HTML + Tailwind (CDN) + vanilla JS +
-# Firebase v8 compat SDK. We just check out, stamp the version into
-# public/app.js, and hand the public/ tree to the Firebase deploy action.
+# No build step — plain HTML + Tailwind (CDN) + vanilla JS + Firebase v8 compat
+# SDK. We check out, stamp the version into public/app.js, authenticate to Google
+# Cloud with KEYLESS Workload Identity Federation (no stored JSON key), and deploy
+# the public/ tree with firebase-tools.
 name: Deploy to Firebase Hosting (live)
 
 on:
@@ -12,13 +13,14 @@ on:
   # Allow a manual re-deploy of main from the Actions tab without a new commit.
   workflow_dispatch:
 
-# Least privilege: this workflow only needs to read the repo contents.
-# Auth to Firebase is done with the service-account secret, not the GITHUB_TOKEN.
+# Least privilege.
+#   contents: read   -> check out the repo
+#   id-token: write  -> mint the OIDC token that WIF exchanges for GCP credentials
 permissions:
   contents: read
+  id-token: write
 
-# Never run two live deploys at once, and do NOT cancel an in-flight production
-# deploy if another push lands — let the first one finish, then run the next.
+# Never run two live deploys at once; let an in-flight production deploy finish.
 concurrency:
   group: firebase-hosting-live
   cancel-in-progress: false
@@ -29,45 +31,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        # actions/checkout v4
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Stamp app version into public/app.js
-        # Computes "V <n> · <YYYY-MM-DD UTC> · <short-sha>" and replaces the
-        # literal __APP_VERSION__ token. version.txt (repo root) is the single
-        # source for the integer; bump it to "auto-version" a release.
+        # Computes "V <n> · <YYYY-MM-DD UTC> · <short-sha>" and replaces the literal
+        # __APP_VERSION__ token. version.txt (repo root) is the single source for
+        # the integer; bump it to "auto-version" a release.
         run: |
           set -euo pipefail
-
           VERSION_NUM="$(tr -cd '0-9' < version.txt)"
           if [ -z "${VERSION_NUM}" ]; then
             echo "::error file=version.txt::version.txt does not contain an integer"
             exit 1
           fi
-
           DATE_UTC="$(date -u +%Y-%m-%d)"
           SHORT_SHA="$(git rev-parse --short HEAD)"
           APP_VERSION="V ${VERSION_NUM} · ${DATE_UTC} · ${SHORT_SHA}"
           echo "Stamping version: ${APP_VERSION}"
-
-          # Fail loudly if the token is missing, so we never ship "V ???".
           if ! grep -q '__APP_VERSION__' public/app.js; then
             echo "::error file=public/app.js::__APP_VERSION__ token not found in public/app.js"
             exit 1
           fi
-
-          # '#' delimiter avoids clashing with the '/' and '·' in the value.
           sed -i "s#__APP_VERSION__#${APP_VERSION}#g" public/app.js
 
-          echo "Resulting versionNumber line(s):"
-          grep -n 'versionNumber' public/app.js || true
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        # Keyless: exchanges the GitHub OIDC token for short-lived GCP credentials
+        # and exports GOOGLE_APPLICATION_CREDENTIALS for firebase-tools to pick up.
+        # The provider is scoped (attribute-condition) to THIS repo only.
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed  # v2
+        with:
+          workload_identity_provider: projects/819905276769/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: gh-deploy@calorie-counter-cdcbe.iam.gserviceaccount.com
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: 20
+
+      - name: Install firebase-tools
+        run: npm install -g firebase-tools
 
       - name: Deploy to Firebase Hosting (live)
-        # FirebaseExtended/action-hosting-deploy v0.10.0
-        # https://github.com/FirebaseExtended/action-hosting-deploy
-        uses: FirebaseExtended/action-hosting-deploy@e2eda2e106cfa35cdbcf4ac9ddaf6c4756df2c8c
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CALORIE_COUNTER_CDCBE }}
-          projectId: calorie-counter-cdcbe
-          channelId: live
+        run: firebase deploy --only hosting --project calorie-counter-cdcbe --non-interactive
