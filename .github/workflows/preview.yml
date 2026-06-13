@@ -66,7 +66,8 @@ jobs:
           node-version: 20
 
       - name: Install firebase-tools
-        run: npm install -g firebase-tools
+        # Pinned for reproducible previews; bump intentionally.
+        run: npm install -g firebase-tools@15.20.0
 
       - name: Deploy preview channel
         id: preview
@@ -77,11 +78,22 @@ jobs:
           URL="$(python3 -c "import json; d=json.load(open('channel.json')); r=d.get('result',{}); print(next(iter(r.values()),{}).get('url',''))")"
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
 
-      - name: Comment preview URL on the PR
+      - name: Upsert preview URL comment on the PR
+        # Update a single bot comment instead of posting a new one each redeploy.
         if: steps.preview.outputs.url != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          URL: ${{ steps.preview.outputs.url }}
         run: |
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            --repo "${{ github.repository }}" \
-            --body "🔎 Firebase preview deployed: ${{ steps.preview.outputs.url }} (expires in 7 days)"
+          set -euo pipefail
+          MARKER="<!-- fb-preview-bot -->"
+          BODY="${MARKER}"$'\n'"🔎 Firebase preview deployed: ${URL} (expires in 7 days)"
+          CID="$(gh api "repos/${REPO}/issues/${PR}/comments" \
+            --jq "map(select(.body | startswith(\"${MARKER}\"))) | (.[0].id // empty)")"
+          if [ -n "${CID}" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${CID}" -f body="${BODY}"
+          else
+            gh api -X POST "repos/${REPO}/issues/${PR}/comments" -f body="${BODY}"
+          fi
