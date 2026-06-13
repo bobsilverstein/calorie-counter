@@ -1,0 +1,23 @@
+# .gitignore for the Calorie Counter app (Firebase + vanilla JS).
+# Ignores IDE/tool cruft, Firebase caches/logs, Node artifacts, and OS junk.
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Firebase
+.firebase/
+firebase-debug.log
+*-debug.log
+.runtimeconfig.json
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

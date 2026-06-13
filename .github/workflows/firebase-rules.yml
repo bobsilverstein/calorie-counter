@@ -1,0 +1,71 @@
+# Deploy Firestore security rules + indexes.
+#
+# !!! SENSITIVE — MANUAL ONLY !!!
+# Security rules are the ONLY thing standing between the public internet and the
+# database. This app currently has NO real auth model, so deploying rules could
+# easily lock everyone out or, worse, leave data wide open. This workflow is
+# therefore gated behind workflow_dispatch (manual) and MUST NOT be wired to run
+# automatically until an auth model exists and the rules have been reviewed.
+#
+# Both firestore.rules and firestore.indexes.json already exist in the repo.
+# firebase.json must also reference them (add a "firestore" block) for the
+# deploy to work. The job exits with a clear error (it does NOT silently no-op)
+# if either file is missing.
+name: Deploy Firestore Rules & Indexes (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy-rules" to confirm you intend to deploy Firestore rules + indexes to PRODUCTION.'
+        required: true
+        default: ''
+
+# Least privilege: only need to read the repo. Firebase auth is via the
+# service-account secret.
+permissions:
+  contents: read
+
+# Never deploy rules concurrently.
+concurrency:
+  group: firebase-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy_rules:
+    name: Deploy Firestore rules and indexes
+    runs-on: ubuntu-latest
+    # Hard stop unless the operator typed the confirmation string.
+    if: ${{ github.event.inputs.confirm == 'deploy-rules' }}
+    steps:
+      - name: Checkout
+        # actions/checkout v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Verify rules and index files exist
+        run: |
+          set -euo pipefail
+          missing=0
+          for f in firestore.rules firestore.indexes.json; do
+            if [ ! -f "$f" ]; then
+              echo "::error file=${f}::${f} not found — create it and reference it in firebase.json before deploying rules."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Refusing to deploy: required Firestore config files are missing."
+            exit 1
+          fi
+
+      - name: Deploy firestore rules + indexes
+        # w9jds/firebase-action v15.19.1 — thin wrapper around firebase-tools.
+        # https://github.com/w9jds/firebase-action
+        # Requires the service account to ALSO have:
+        #   - Firebase Rules Admin
+        #   - Cloud Datastore Index Admin
+        # (Hosting-only permissions are NOT enough to deploy rules/indexes.)
+        uses: w9jds/firebase-action@b3c725170700a48b168a32972e7aaa4c92bf1061
+        with:
+          args: deploy --only firestore:rules,firestore:indexes --project calorie-counter-cdcbe
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CALORIE_COUNTER_CDCBE }}

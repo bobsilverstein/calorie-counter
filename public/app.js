@@ -1,4 +1,4 @@
-/* VERSION PLACEHOLDER — DO NOT REMOVE */
+const versionNumber = "__APP_VERSION__";
 
 function updateVersionLabel() {
   const now = new Date();
@@ -18,6 +18,8 @@ function updateVersionLabel() {
   document.getElementById("pageTitle").textContent =
     `Calorie Counter — ${fullVersion}`;
 }
+
+updateVersionLabel();
 
 if ("serviceWorker" in navigator) {
   // Kill all existing SWs
@@ -109,30 +111,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const shabbatCandles = document.getElementById("shabbatCandles");
   const shabbatParsha  = document.getElementById("shabbatParsha");
 
- /* VERSION PLACEHOLDER — DO NOT REMOVE */
-const versionNumber = "V ???"; // deploy.bat overwrites this line
-
-function updateVersionLabel() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const yyyy = now.getFullYear();
-
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-  const time = `${hours}:${minutes} ${ampm}`;
-
-  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
-
-  document.getElementById("versionLabel").textContent = fullVersion;
-  document.getElementById("pageTitle").textContent =
-    `Calorie Counter — ${fullVersion}`;
-}
-
-updateVersionLabel();
-
   // state
   let currentDate = new Date();
   let currentMeal = "breakfast";
@@ -146,9 +124,9 @@ updateVersionLabel();
   const fmt = d => d.toISOString().split("T")[0];
   const isToday = d => fmt(d) === fmt(new Date());
 
-  // location for Shabbat times (Itasca, IL)
-  const SHABBAT_LAT = 41.975;
-  const SHABBAT_LON = -88.007;
+  // location for Shabbat times (Elk Grove Village, IL)
+  const SHABBAT_LAT = 42.0039;
+  const SHABBAT_LON = -87.9703;
 
   // UPC scanner state
   let upcStream = null;
@@ -488,7 +466,7 @@ updateVersionLabel();
 
   function runFoodsSearch(){
     const q = foodsSearch.value.toLowerCase();
-    const list = q ? foodsCache.filter(f=>match(f,q)) : foodsCache;
+    const list = q ? foodsCache.filter(f=>match(f,q)) : [];
     foodsList.innerHTML = "";
     list.forEach(f=>{
       const b = document.createElement("button");
@@ -531,7 +509,7 @@ updateVersionLabel();
   // add search
   function runAddSearch(){
     const q = addSearch.value.toLowerCase();
-    const list = q ? foodsCache.filter(f=>match(f,q)) : foodsCache;
+    const list = q ? foodsCache.filter(f=>match(f,q)) : [];
     addResults.innerHTML = "";
     list.forEach(f=>{
       const b = document.createElement("button");
@@ -928,31 +906,7 @@ updateVersionLabel();
 
   // init
   pushView("log");
-  // loadFoods();  // disable auto-load of food list
+  loadFoods();  // keep foodsCache warm for search (search renders nothing on empty query)
   renderDate();
   loadMostRecentWeight();
 });
-
-/* VERSION PLACEHOLDER — DO NOT REMOVE */
-const versionNumber = "V ???"; // deploy.bat overwrites this line
-
-function updateVersionLabel() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const yyyy = now.getFullYear();
-
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-  const time = `${hours}:${minutes} ${ampm}`;
-
-  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
-
-  document.getElementById("versionLabel").textContent = fullVersion;
-  document.getElementById("pageTitle").textContent =
-    `Calorie Counter — ${fullVersion}`;
-}
-
-updateVersionLabel();
