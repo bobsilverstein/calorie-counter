@@ -1,3 +1,14 @@
+v206 (from V205 testing)
+1) Servings screen: "Calories per gram/piece" now shows the calculated per-unit value (CaloriesPerServing / ServingSize) instead of the total. Calories per unit × Serving size = Calories in this serving, which is saved to the servings/log database.
+2) Servings screen is cleared when arriving from Log or Foods and after saving.
+3) Saving a serving now clears the screen and stays on the Servings screen.
+4) Header uses the same red (#dc2626) as the Clear button.
+5) Log header total no longer shows the word "calories" under the number.
+6) Servings screen: Serving size is now the sum of two boxes (serving1 + serving2).
+7) Foods/Servings use the Firebase schema: Food, Comment, Unit, CaloriesPerServing (total for serving), ServingSize.
+8) Shabbat candle lighting / parsha now use the displayed date's week (gy/gm/gd) instead of always showing the current week.
+   Location for the GPS coordinates (42.0039, -87.9703) is Elk Grove Village, IL.
+
 All the DONE changes are going into v192.
 
 Old changes to be restored to the new v188

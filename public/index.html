@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="favicon.ico" />
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#1d4ed8" />
+  <meta name="theme-color" content="#dc2626" />
 </head>
 
 <body class="bg-white text-slate-900 text-base font-semibold overflow-hidden">
@@ -16,7 +16,7 @@
 
   <!-- HEADER -->
   <div class="rounded-2xl flex flex-col items-center justify-start"
-       style="background:#1d4ed8; color:white; height:110px;">
+       style="background:#dc2626; color:white; height:110px;">
 
     <div class="flex justify-between items-center w-full px-4 mt-1">
       <button id="prevDay" class="text-xl font-bold cursor-pointer">◀</button>
@@ -142,11 +142,17 @@
       <div>
         <label>Serving size</label>
         <div class="flex items-center gap-1">
-          <button id="servDec" class="px-2 py-1 bg-blue-200 rounded">−</button>
-          <input id="addServingSize"
-                 type="number"
+          <input id="addServing1"
+                 type="number" placeholder="Serving 1"
                  class="flex-1 border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
-          <button id="servInc" class="px-2 py-1 bg-blue-200 rounded">+</button>
+          <span class="px-1">+</span>
+          <input id="addServing2"
+                 type="number" placeholder="Serving 2"
+                 class="flex-1 border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+          <span class="px-1">=</span>
+          <input id="addServingSize"
+                 type="number" readonly
+                 class="w-16 border border-blue-300 rounded px-2 py-1 text-sm bg-slate-100 text-right" />
         </div>
       </div>
 

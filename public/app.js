@@ -77,6 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const addComment = document.getElementById("addComment");
   const addCalories = document.getElementById("addCalories");
   const addServingSize = document.getElementById("addServingSize");
+  const addServing1 = document.getElementById("addServing1");
+  const addServing2 = document.getElementById("addServing2");
   const addServingMic = document.getElementById("addServingMic");
   const addCalLabel = document.getElementById("addCalLabel");
   const addTotal = document.getElementById("addTotal");
@@ -268,7 +270,6 @@ document.addEventListener("DOMContentLoaded", () => {
     [weightValue,weightMic],
     [exerciseComment,exerciseMic],
     [addSearch,addSearchMic],
-    [addServingSize,addServingMic],
     [foodsSearch,foodsSearchMic]
   ].forEach(([i,b])=>micAuto(i,b));
 
@@ -276,15 +277,20 @@ document.addEventListener("DOMContentLoaded", () => {
   weightClear.onclick   = () => { weightValue.value=""; saveNotes(); };
   exerciseClear.onclick = () => { exerciseComment.value=""; saveNotes(); };
 
-  addClear.onclick = () => {
+  function clearAddForm(){
     addFoodName.value="";
     addComment.value="";
     addCalories.value="";
+    addServing1.value="";
+    addServing2.value="";
     addServingSize.value="";
     addSearch.value="";
     addResults.innerHTML="";
     addTotal.value="";
-  };
+    addCalLabel.textContent="Calories per gram";
+  }
+
+  addClear.onclick = clearAddForm;
 
   logClear.onclick = () => {
     tefillinComment.value="";
@@ -310,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.onpopstate = () => showView(history.state?.view || "log");
 
   navLog.onclick  = () => pushView("log");
-  navAdd.onclick  = () => pushView("add");
+  navAdd.onclick  = () => { clearAddForm(); pushView("add"); };
   navFoods.onclick= () => pushView("foods");
 
   document.querySelectorAll(".meal-toggle").forEach(b=>{
@@ -377,8 +383,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!shabbatInfo || !shabbatCandles || !shabbatParsha) return;
 
-  const key = fmt(date);
-  const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&start=${key}&end=${key}`;
+  const gy = date.getFullYear();
+  const gm = date.getMonth() + 1;
+  const gd = date.getDate();
+  const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&b=18&M=on&gy=${gy}&gm=${gm}&gd=${gd}`;
 
   try {
     const res = await fetch(url);
@@ -454,6 +462,15 @@ document.addEventListener("DOMContentLoaded", () => {
            (f.Comment||"").toLowerCase().includes(q);
   }
 
+  // Foods store the total Calories for the serving (CaloriesPerServing) and the
+  // ServingSize; the per-unit value (calories per gram/piece) is derived.
+  function foodPerUnit(f){
+    const cal = Number(f.CaloriesPerServing) || 0;
+    const s   = Number(f.ServingSize) || 0;
+    const per = s ? cal / s : cal;
+    return Number(per.toFixed(2));
+  }
+
   function runFoodsSearch(){
     const q = foodsSearch.value.toLowerCase();
     const list = q ? foodsCache.filter(f=>match(f,q)) : [];
@@ -464,7 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
       b.innerHTML = `
         <div class="font-medium">${f.Food}</div>
         <div class="text-xs text-blue-700">${f.Comment || ""}</div>
-        <div class="text-xs text-blue-700">${f.CaloriesPerServing} cal/${f.Unit}</div>
+        <div class="text-xs text-blue-700">${foodPerUnit(f)} cal/${f.Unit}</div>
       `;
       b.onclick = () => {
         loadFoodEditor(f);
@@ -507,14 +524,16 @@ document.addEventListener("DOMContentLoaded", () => {
       b.innerHTML = `
         <div class="font-medium">${f.Food}</div>
         <div class="text-xs text-blue-700">${f.Comment || ""}</div>
-        <div class="text-xs text-blue-700">${f.CaloriesPerServing} cal/${f.Unit}</div>
+        <div class="text-xs text-blue-700">${foodPerUnit(f)} cal/${f.Unit}</div>
       `;
       b.onclick = () => {
         addFoodName.value = f.Food;
         addComment.value  = f.Comment || "";
-        addCalories.value = f.CaloriesPerServing;
+        addCalories.value = foodPerUnit(f);
         addCalLabel.textContent =
           f.Unit === "g" ? "Calories per gram" : "Calories per piece";
+        addServing1.value = "";
+        addServing2.value = "";
         addServingSize.value = "";
         addSearch.value = "";
         addResults.innerHTML = "";
@@ -527,6 +546,15 @@ document.addEventListener("DOMContentLoaded", () => {
   addSearch.oninput = runAddSearch;
 
   // calc total (serving calories, integer)
+  function updateServingSize(){
+    const s1 = Number(addServing1.value) || 0;
+    const s2 = Number(addServing2.value) || 0;
+    const sum = s1 + s2;
+    addServingSize.value = (addServing1.value === "" && addServing2.value === "")
+      ? "" : sum;
+    updateAddTotal();
+  }
+
   function updateAddTotal(){
     const cal = Number(addCalories.value) || 0;
     const s   = Number(addServingSize.value) || 0;
@@ -534,7 +562,8 @@ document.addEventListener("DOMContentLoaded", () => {
     addTotal.value = s ? Math.round(t) : "";
   }
 
-  addServingSize.oninput = updateAddTotal;
+  addServing1.oninput = updateServingSize;
+  addServing2.oninput = updateServingSize;
 
   // foods per-unit calculator (2 decimals)
   function updateFoodsPerUnit(){
@@ -569,7 +598,7 @@ document.addEventListener("DOMContentLoaded", () => {
         Timestamp: Date.now()
       });
 
-    pushView("log");
+    clearAddForm();
     loadLog();
   };
 
@@ -657,6 +686,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       head.onclick = () => {
+        clearAddForm();
         pushView("add");
         currentMeal = meal;
         document.querySelectorAll(".meal-toggle").forEach(b=>{
@@ -684,14 +714,14 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     });
 
-    totalCalories.textContent = `${total} calories`;
+    totalCalories.textContent = `${total}`;
 
     const banner = document.querySelector("div[style*='height:110px']");
     if (banner){
       banner.style.backgroundColor =
         total >= 2000 ? "#dc2626" :
         total >= 1800 ? "#facc15" :
-        "#1d4ed8";
+        "#dc2626";
     }
   }
 
@@ -735,16 +765,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = foodsFoodName.value.trim();
     if (!name) return;
 
-    const cal  = Number(foodsCalories.value) || 0;
+    const cal  = Number(foodsCalories.value) || 0; // total calories for the serving
     const s    = Number(foodsServingSize.value) || 0;
     const unit = foodsUnit.value;
-
-    const perUnit = s ? cal / s : 0;
 
     await db.collection("Foods").doc().set({
       Food: name,
       Comment: foodsComment.value.trim(),
-      CaloriesPerServing: Math.round(perUnit),
+      CaloriesPerServing: cal,
       Unit: unit,
       ServingSize: s
     });
