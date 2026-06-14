@@ -354,29 +354,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function applyTefillinDisable(shabbat, yomTov){
-    if (shabbat || yomTov){
-      tefillinCheckbox.disabled = true;
-      tefillinCheckbox.checked = false;
+    // On Shabbos/Yom Tov disable ONLY the checkbox; the comment box, its clear
+    // button, and the mic stay active (issue #9).
+    const block = shabbat || yomTov;
+    tefillinCheckbox.disabled = block;
+    tefillinCheckbox.classList.toggle("opacity-40", block);
+    if (block) tefillinCheckbox.checked = false;
 
-      tefillinComment.disabled = true;
-      tefillinClear.disabled = true;
-      tefillinMic.disabled = true;
-
-      tefillinCheckbox.classList.add("opacity-40");
-      tefillinComment.classList.add("opacity-40");
-      tefillinClear.classList.add("opacity-40");
-      tefillinMic.classList.add("opacity-40");
-    } else {
-      tefillinCheckbox.disabled = false;
-      tefillinComment.disabled = false;
-      tefillinClear.disabled = false;
-      tefillinMic.disabled = false;
-
-      tefillinCheckbox.classList.remove("opacity-40");
-      tefillinComment.classList.remove("opacity-40");
-      tefillinClear.classList.remove("opacity-40");
-      tefillinMic.classList.remove("opacity-40");
-    }
+    tefillinComment.disabled = false;
+    tefillinClear.disabled = false;
+    tefillinMic.disabled = false;
+    tefillinComment.classList.remove("opacity-40");
+    tefillinClear.classList.remove("opacity-40");
+    tefillinMic.classList.remove("opacity-40");
   }
 
  async function loadShabbatInfo(date){
@@ -426,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dayName.textContent = dNamesFull[d.getDay()];
     dayDate.textContent =
       `${mNamesFull[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-    nextDay.classList.toggle("invisible", isToday(d));
+    nextDay.classList.remove("invisible"); // forward arrow always visible (issue #8)
     todayButton.style.display = isToday(d) ? "none" : "inline-block";
     loadLog();
     loadNotes();
