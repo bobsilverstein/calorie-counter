@@ -21,14 +21,11 @@ function updateVersionLabel() {
 
 updateVersionLabel();
 
+// Register the service worker for offline support (network-first; see sw.js).
 if ("serviceWorker" in navigator) {
-  // Kill all existing SWs
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(reg => reg.unregister());
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
-
-  // Block all future SW registrations
-  navigator.serviceWorker.register = () => Promise.resolve(null);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
