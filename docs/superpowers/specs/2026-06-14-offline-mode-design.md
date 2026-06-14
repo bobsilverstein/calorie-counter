@@ -2,7 +2,7 @@
 
 - Date: 2026-06-14
 - Issue: #10
-- Status: approved (design); pending implementation plan
+- Status: approved; implemented (plan: docs/superpowers/plans/2026-06-14-offline-mode.md)
 
 ## Goal
 

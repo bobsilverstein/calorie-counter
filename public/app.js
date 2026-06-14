@@ -904,9 +904,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Offline indicator
   const offlineBanner = document.getElementById("offlineBanner");
-  const updateOnlineStatus = () =>
-    offlineBanner.classList.toggle("hidden", navigator.onLine);
-  window.addEventListener("online", updateOnlineStatus);
-  window.addEventListener("offline", updateOnlineStatus);
-  updateOnlineStatus();
+  if (offlineBanner) {
+    const updateOnlineStatus = () =>
+      offlineBanner.classList.toggle("hidden", navigator.onLine);
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    updateOnlineStatus();
+  }
 });
