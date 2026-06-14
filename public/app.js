@@ -21,18 +21,20 @@ function updateVersionLabel() {
 
 updateVersionLabel();
 
+// Register the service worker for offline support (network-first; see sw.js).
 if ("serviceWorker" in navigator) {
-  // Kill all existing SWs
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(reg => reg.unregister());
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   });
-
-  // Block all future SW registrations
-  navigator.serviceWorker.register = () => Promise.resolve(null);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const db = firebase.firestore();
+
+  // Offline persistence: cached reads + queued writes that sync on reconnect.
+  // Must run before any query. Fails harmlessly on multi-tab (failed-precondition)
+  // or unsupported browsers (unimplemented) — app simply behaves online-only.
+  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
   // refs
   const viewLog = document.getElementById("view-log");
@@ -899,4 +901,14 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFoods();  // keep foodsCache warm for search (search renders nothing on empty query)
   renderDate();
   loadMostRecentWeight();
+
+  // Offline indicator
+  const offlineBanner = document.getElementById("offlineBanner");
+  if (offlineBanner) {
+    const updateOnlineStatus = () =>
+      offlineBanner.classList.toggle("hidden", navigator.onLine);
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    updateOnlineStatus();
+  }
 });
