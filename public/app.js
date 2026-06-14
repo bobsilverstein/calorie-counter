@@ -79,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const addServingSize = document.getElementById("addServingSize");
   const addServing1 = document.getElementById("addServing1");
   const addServing2 = document.getElementById("addServing2");
-  const addServingMic = document.getElementById("addServingMic");
   const addCalLabel = document.getElementById("addCalLabel");
   const addTotal = document.getElementById("addTotal");
   const addClear = document.getElementById("addClear");
@@ -550,8 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const s1 = Number(addServing1.value) || 0;
     const s2 = Number(addServing2.value) || 0;
     const sum = s1 + s2;
-    addServingSize.value = (addServing1.value === "" && addServing2.value === "")
-      ? "" : sum;
+    addServingSize.value = sum ? sum : "";
     updateAddTotal();
   }
 
