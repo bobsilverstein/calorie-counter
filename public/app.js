@@ -904,4 +904,12 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFoods();  // keep foodsCache warm for search (search renders nothing on empty query)
   renderDate();
   loadMostRecentWeight();
+
+  // Offline indicator
+  const offlineBanner = document.getElementById("offlineBanner");
+  const updateOnlineStatus = () =>
+    offlineBanner.classList.toggle("hidden", navigator.onLine);
+  window.addEventListener("online", updateOnlineStatus);
+  window.addEventListener("offline", updateOnlineStatus);
+  updateOnlineStatus();
 });
