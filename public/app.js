@@ -34,6 +34,11 @@ if ("serviceWorker" in navigator) {
 document.addEventListener("DOMContentLoaded", () => {
   const db = firebase.firestore();
 
+  // Offline persistence: cached reads + queued writes that sync on reconnect.
+  // Must run before any query. Fails harmlessly on multi-tab (failed-precondition)
+  // or unsupported browsers (unimplemented) — app simply behaves online-only.
+  db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
   // refs
   const viewLog = document.getElementById("view-log");
   const viewAdd = document.getElementById("view-add");
