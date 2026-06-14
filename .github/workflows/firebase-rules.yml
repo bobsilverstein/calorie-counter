@@ -1,16 +1,19 @@
 # Deploy Firestore security rules + indexes.
 #
 # !!! SENSITIVE — MANUAL ONLY !!!
-# Security rules are the ONLY thing standing between the public internet and the
-# database. This app currently has NO real auth model, so deploying rules could
-# easily lock everyone out or, worse, leave data wide open. This workflow is
-# therefore gated behind workflow_dispatch (manual) and MUST NOT be wired to run
-# automatically until an auth model exists and the rules have been reviewed.
+# Security rules are the ONLY barrier between the public internet and the
+# database. This app currently has NO real auth model, so deploying the CURRENT
+# rules would lock everyone out. This workflow is gated behind workflow_dispatch
+# (manual) + a typed confirmation and MUST NOT be wired to run automatically
+# until an auth model exists and the rules have been reviewed.
 #
 # Both firestore.rules and firestore.indexes.json already exist in the repo.
-# firebase.json must also reference them (add a "firestore" block) for the
-# deploy to work. The job exits with a clear error (it does NOT silently no-op)
-# if either file is missing.
+# firebase.json must ALSO reference them (add a "firestore" block) before this
+# can deploy — that block is intentionally still absent as a safety interlock, so
+# a stray manual run errors out instead of shipping lock-out rules. The deploy
+# service account already holds Firebase Rules Admin + Cloud Datastore Index
+# Admin (granted during the WIF setup), so no extra IAM is needed once you're
+# ready.
 name: Deploy Firestore Rules & Indexes (manual)
 
 on:
@@ -21,12 +24,13 @@ on:
         required: true
         default: ''
 
-# Least privilege: only need to read the repo. Firebase auth is via the
-# service-account secret.
+# Least privilege.
+#   contents: read   -> check out the repo
+#   id-token: write  -> WIF OIDC token (keyless auth to GCP)
 permissions:
   contents: read
+  id-token: write
 
-# Never deploy rules concurrently.
 concurrency:
   group: firebase-rules
   cancel-in-progress: false
@@ -39,8 +43,7 @@ jobs:
     if: ${{ github.event.inputs.confirm == 'deploy-rules' }}
     steps:
       - name: Checkout
-        # actions/checkout v4
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Verify rules and index files exist
         run: |
@@ -56,16 +59,27 @@ jobs:
             echo "Refusing to deploy: required Firestore config files are missing."
             exit 1
           fi
+          # Safety interlock: firebase.json must wire up a "firestore" block before
+          # this can deploy (kept absent until the auth model is ready).
+          if ! python3 -c "import json,sys; sys.exit(0 if 'firestore' in json.load(open('firebase.json')) else 1)"; then
+            echo "::error file=firebase.json::No \"firestore\" block in firebase.json. Add { \"firestore\": { \"rules\": \"firestore.rules\", \"indexes\": \"firestore.indexes.json\" } } once the auth model is ready, then re-run."
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed  # v2
+        with:
+          workload_identity_provider: projects/819905276769/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: gh-deploy@calorie-counter-cdcbe.iam.gserviceaccount.com
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: 20
+
+      - name: Install firebase-tools
+        # Pinned for reproducible, auditable rules deploys; bump intentionally.
+        run: npm install -g firebase-tools@15.20.0
 
       - name: Deploy firestore rules + indexes
-        # w9jds/firebase-action v15.19.1 — thin wrapper around firebase-tools.
-        # https://github.com/w9jds/firebase-action
-        # Requires the service account to ALSO have:
-        #   - Firebase Rules Admin
-        #   - Cloud Datastore Index Admin
-        # (Hosting-only permissions are NOT enough to deploy rules/indexes.)
-        uses: w9jds/firebase-action@b3c725170700a48b168a32972e7aaa4c92bf1061
-        with:
-          args: deploy --only firestore:rules,firestore:indexes --project calorie-counter-cdcbe
-        env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CALORIE_COUNTER_CDCBE }}
+        run: firebase deploy --only firestore:rules,firestore:indexes --project calorie-counter-cdcbe --non-interactive
