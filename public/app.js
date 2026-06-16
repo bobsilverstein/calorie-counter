@@ -124,7 +124,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const mNamesFull = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const MEALS = ["breakfast","lunch","snack","dinner"];
 
-  const fmt = d => d.toISOString().split("T")[0];
+  const fmt = d => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
   const isToday = d => fmt(d) === fmt(new Date());
 
   // location for Shabbat times (Elk Grove Village, IL)
