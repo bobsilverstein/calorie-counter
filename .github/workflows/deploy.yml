@@ -34,9 +34,9 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Stamp app version into public/app.js
-        # Computes "V <n> · <YYYY-MM-DD UTC> · <short-sha>" and replaces the literal
-        # __APP_VERSION__ token. version.txt (repo root) is the single source for
-        # the integer; bump it to "auto-version" a release.
+        # Replaces the literal __APP_VERSION__ token with V<n>. version.txt (repo
+        # root) is the single source for the integer; bump it to "auto-version" a
+        # release.
         run: |
           set -euo pipefail
           VERSION_NUM="$(tr -cd '0-9' < version.txt)"
@@ -44,9 +44,7 @@ jobs:
             echo "::error file=version.txt::version.txt does not contain an integer"
             exit 1
           fi
-          DATE_UTC="$(date -u +%Y-%m-%d)"
-          SHORT_SHA="$(git rev-parse --short HEAD)"
-          APP_VERSION="V ${VERSION_NUM} · ${DATE_UTC} · ${SHORT_SHA}"
+          APP_VERSION="V${VERSION_NUM}"
           echo "Stamping version: ${APP_VERSION}"
           if ! grep -q '__APP_VERSION__' public/app.js; then
             echo "::error file=public/app.js::__APP_VERSION__ token not found in public/app.js"

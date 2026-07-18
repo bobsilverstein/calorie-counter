@@ -20,7 +20,7 @@
 <div class="max-w-sm mx-auto rounded-2xl border border-blue-700 overflow-hidden flex flex-col" style="height:100vh;height:100dvh">
 
   <!-- HEADER -->
-  <div class="rounded-2xl flex flex-col items-center justify-start"
+  <div id="headerBanner" class="rounded-2xl flex flex-col items-center justify-start"
        style="background:#dc2626; color:white; height:110px;">
 
     <div class="flex justify-between items-center w-full px-4 mt-1">
@@ -76,6 +76,19 @@
         <button id="exerciseClear" class="absolute right-1 top-1 text-xs cursor-pointer">✕</button>
       </div>
       <button id="exerciseMic" class="text-lg px-1 cursor-pointer">🎤</button>
+    </div>
+
+    <!-- BIKE -->
+    <div class="flex items-center gap-2 border border-blue-300 rounded px-2 py-1 text-xs bg-blue-50">
+      <span class="w-16">Bike</span>
+      <div class="flex-1 relative">
+        <input id="bikeMiles" type="number" step="0.1" placeholder="miles" data-normalize-numbers="true"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-xs bg-white" />
+      </div>
+      <div class="flex-1 relative">
+        <input id="bikeSpeed" type="number" step="0.1" placeholder="avg mph" data-normalize-numbers="true"
+               class="w-full border border-blue-300 rounded px-2 py-1 text-xs bg-white" />
+      </div>
     </div>
 
     <!-- SHABBAT INFO -->
@@ -158,7 +171,13 @@
           <input id="addServingSize"
                  type="number" readonly
                  class="w-16 border border-blue-300 rounded px-2 py-1 text-sm bg-slate-100 text-right" />
+          <button id="addServingMic" class="text-lg px-1 cursor-pointer">🎤</button>
         </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input id="addTntc" type="checkbox" class="w-4 h-4 cursor-pointer" />
+        <label for="addTntc" class="text-xs font-semibold">TNTC (too numerous to count)</label>
       </div>
 
       <div>
@@ -239,8 +258,11 @@
 
       <div>
         <label>Serving size</label>
-        <input id="foodsServingSize" type="number"
-               class="w-full border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+        <div class="flex items-center gap-1">
+          <input id="foodsServingSize" type="number"
+                 class="flex-1 border border-blue-300 rounded px-2 py-1 text-sm bg-white" />
+          <button id="foodsServingMic" class="text-lg px-1 cursor-pointer">🎤</button>
+        </div>
       </div>
 
       <div>
@@ -314,8 +336,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="firebase-config.js"></script>
 <script src="app.js"></script>
-
-<div id="versionLabel" class="text-center text-[10px] text-gray-400 mt-2 mb-3"></div>
 
 </body>
 </html>
