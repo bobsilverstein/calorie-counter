@@ -1,22 +1,9 @@
 const versionNumber = "__APP_VERSION__";
 
 function updateVersionLabel() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, "0");
-  const dd = String(now.getDate()).padStart(2, "0");
-  const yyyy = now.getFullYear();
-
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-  const time = `${hours}:${minutes} ${ampm}`;
-
-  const fullVersion = `${versionNumber} ${mm}/${dd}/${yyyy} ${time}`;
-
-  document.getElementById("versionLabel").textContent = fullVersion;
+  document.getElementById("versionLabel").textContent = versionNumber;
   document.getElementById("pageTitle").textContent =
-    `Calorie Counter — ${fullVersion}`;
+    `Calorie Counter — ${versionNumber}`;
 }
 
 updateVersionLabel();
@@ -71,6 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const logClear = document.getElementById("logClear");
   const logSave = document.getElementById("logSave");
 
+  const bikeMiles = document.getElementById("bikeMiles");
+  const bikeSpeed = document.getElementById("bikeSpeed");
+
   // add view
   const addSearch = document.getElementById("addSearch");
   const addSearchMic = document.getElementById("addSearchMic");
@@ -85,6 +75,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const addTotal = document.getElementById("addTotal");
   const addClear = document.getElementById("addClear");
   const addSave = document.getElementById("addSave");
+  const addServingMic = document.getElementById("addServingMic");
+  const addTntc = document.getElementById("addTntc");
 
   // foods view
   const foodsSearch = document.getElementById("foodsSearch");
@@ -100,6 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const foodsSave = document.getElementById("foodsSave");
   const foodsUnitG = document.getElementById("foodsUnitG");
   const foodsUnitEach = document.getElementById("foodsUnitEach");
+  const foodsServingMic = document.getElementById("foodsServingMic");
 
   const versionLabel = document.getElementById("versionLabel");
 
@@ -114,6 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const shabbatCandles = document.getElementById("shabbatCandles");
   const shabbatParsha  = document.getElementById("shabbatParsha");
 
+  const headerBanner = document.getElementById("headerBanner");
+
   // state
   let currentDate = new Date();
   let currentMeal = "breakfast";
@@ -124,6 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const mNamesFull = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const MEALS = ["breakfast","lunch","snack","dinner"];
 
+  // Build the local YYYY-MM-DD key explicitly from local time so that late-night
+  // / early-morning usage does not shift to the previous day (Monday showing
+  // Sunday's meals).
   const fmt = d => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -131,6 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${yyyy}-${mm}-${dd}`;
   };
   const isToday = d => fmt(d) === fmt(new Date());
+
+  function fmtNumber(n, decimals) {
+    if (n === "" || n == null || isNaN(n)) return "";
+    const v = Number(n);
+    return Number.isInteger(v) ? String(v) : v.toFixed(decimals);
+  }
 
   // location for Shabbat times (Elk Grove Village, IL)
   const SHABBAT_LAT = 42.0039;
@@ -257,18 +261,28 @@ document.addEventListener("DOMContentLoaded", () => {
     r.interimResults = false;
     r.maxAlternatives = 1;
     r.onresult = e => {
-      target.value = e.results[0][0].transcript;
+      let transcript = e.results[0][0].transcript;
+      // Normalize spoken numbers so "10.5" etc. work for numeric inputs.
+      if (target.type === "number" || target.inputMode === "decimal" || target.placeholder === "miles" || target.placeholder === "avg mph") {
+        const numbers = transcript.match(/-?\d+(\.\d+)?/g);
+        transcript = numbers ? numbers.join(".") : transcript;
+      }
+      target.value = transcript;
 
       if (target === addSearch) {
         runAddSearch();
       } else if (target === foodsSearch) {
         runFoodsSearch();
+      } else if (target === addServing1 || target === addServing2) {
+        updateServingSize();
       }
 
+      target.dispatchEvent(new Event("input"));
       target.dispatchEvent(new Event("blur"));
     };
+    r.onerror = () => btn.textContent = "🎤";
     r.onend = () => btn.textContent = "🎤";
-    r.start();
+    try { r.start(); } catch { btn.textContent = "🎤"; }
   }
 
   [
@@ -276,8 +290,27 @@ document.addEventListener("DOMContentLoaded", () => {
     [weightValue,weightMic],
     [exerciseComment,exerciseMic],
     [addSearch,addSearchMic],
-    [foodsSearch,foodsSearchMic]
+    [foodsSearch,foodsSearchMic],
+    [addServing1,addServingMic],
+    [addServing2,addServingMic],
+    [foodsServingSize,foodsServingMic]
   ].forEach(([i,b])=>micAuto(i,b));
+
+  // Re-activate mic on Windows: pointer events on the input itself also start mic
+  // because some Windows browsers only deliver pointerdown reliably.
+  function micPointer(input, btn) {
+    input.addEventListener("pointerdown", () => startMic(input, btn));
+  }
+  [
+    [tefillinComment,tefillinMic],
+    [weightValue,weightMic],
+    [exerciseComment,exerciseMic],
+    [addSearch,addSearchMic],
+    [foodsSearch,foodsSearchMic],
+    [addServing1,addServingMic],
+    [addServing2,addServingMic],
+    [foodsServingSize,foodsServingMic]
+  ].forEach(([i,b])=>micPointer(i,b));
 
   tefillinClear.onclick = () => { tefillinComment.value=""; saveNotes(); };
   weightClear.onclick   = () => { weightValue.value=""; saveNotes(); };
@@ -294,15 +327,18 @@ document.addEventListener("DOMContentLoaded", () => {
     addResults.innerHTML="";
     addTotal.value="";
     addCalLabel.textContent="Calories per gram";
+    addTntc.checked = false;
   }
 
-  addClear.onclick = clearAddForm;
+  addClear.onclick = () => { clearAddForm(); };
 
   logClear.onclick = () => {
     tefillinComment.value="";
     exerciseComment.value="";
     weightValue.value="";
     tefillinCheckbox.checked=false;
+    bikeMiles.value="";
+    bikeSpeed.value="";
   };
 
   function showView(v){
@@ -323,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   navLog.onclick  = () => pushView("log");
   navAdd.onclick  = () => { clearAddForm(); pushView("add"); };
-  navFoods.onclick= () => pushView("foods");
+  navFoods.onclick= () => { clearFoodsForm(); pushView("foods"); };
 
   document.querySelectorAll(".meal-toggle").forEach(b=>{
     b.onclick = () => {
@@ -332,7 +368,32 @@ document.addEventListener("DOMContentLoaded", () => {
         x.style.backgroundColor = "white";
       });
       b.style.backgroundColor = "#dbeafe";
+      clearAddForm();
     };
+  });
+
+  // Alt+C / Alt+S speed keys for Clear and Save on active view.
+  document.addEventListener("keydown", e => {
+    if (!e.altKey) return;
+    const key = e.key.toLowerCase();
+    if (key !== "c" && key !== "s") return;
+
+    let clearBtn, saveBtn;
+    if (!viewLog.classList.contains("hidden")) {
+      clearBtn = logClear; saveBtn = logSave;
+    } else if (!viewAdd.classList.contains("hidden")) {
+      clearBtn = addClear; saveBtn = addSave;
+    } else if (!viewFoods.classList.contains("hidden")) {
+      clearBtn = foodsClear; saveBtn = foodsSave;
+    }
+
+    if (key === "c" && clearBtn) {
+      e.preventDefault();
+      clearBtn.click();
+    } else if (key === "s" && saveBtn) {
+      e.preventDefault();
+      saveBtn.click();
+    }
   });
 
   async function isJewishHoliday(gDate){
@@ -587,6 +648,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = addFoodName.value.trim();
     if (!name) return;
 
+    const tntc = addTntc.checked;
     const cal  = Number(addCalories.value) || 0; // per unit
     const s    = Number(addServingSize.value) || 0;
     const t    = cal * s;
@@ -598,8 +660,9 @@ document.addEventListener("DOMContentLoaded", () => {
         Comment: addComment.value.trim(),
         CaloriesPerServing: cal,
         ServingSize: s,
-        TotalCalories: Math.round(t),
+        TotalCalories: tntc ? 0 : Math.round(t),
         Unit: unit,
+        TNTC: tntc,
         Timestamp: Date.now()
       });
 
@@ -617,6 +680,8 @@ document.addEventListener("DOMContentLoaded", () => {
       TefillinComment: tefillinComment.value.trim(),
       WeightValue: weightValue.value === "" ? null : Number(weightValue.value),
       ExerciseComment: exerciseComment.value.trim(),
+      BikeMiles: bikeMiles.value === "" ? null : Number(bikeMiles.value),
+      BikeSpeed: bikeSpeed.value === "" ? null : Number(bikeSpeed.value),
       Timestamp: Date.now()
     }, {merge:true});
   }
@@ -629,6 +694,8 @@ document.addEventListener("DOMContentLoaded", () => {
     tefillinComment.value    = d.TefillinComment || "";
     exerciseComment.value    = d.ExerciseComment || "";
     weightValue.value        = d.WeightValue != null ? d.WeightValue : "";
+    bikeMiles.value          = d.BikeMiles != null ? fmtNumber(d.BikeMiles, 1) : "";
+    bikeSpeed.value          = d.BikeSpeed != null ? fmtNumber(d.BikeSpeed, 1) : "";
   }
 
   // log
@@ -650,7 +717,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const mealTotal = entries.reduce((a,e)=>a+(e.TotalCalories||0),0);
       total += mealTotal;
 
-      const sec = document.createElement("div");
+      const hasTntc = entries.some(e => e.TNTC);
+
+    const sec = document.createElement("div");
       sec.className = "border border-blue-300 rounded p-2";
 
       const head = document.createElement("div");
@@ -659,7 +728,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="font-semibold text-blue-700">
           ${meal.charAt(0).toUpperCase()+meal.slice(1)} Servings
         </div>
-        <div class="text-sm text-blue-700">${mealTotal} cal</div>
+        <div class="text-sm text-blue-700">${hasTntc ? ">" : ""}${mealTotal} cal</div>
       `;
 
       const body = document.createElement("div");
@@ -679,7 +748,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <div class="flex items-center gap-2">
             <div class="w-16 text-right font-bold text-blue-700">
-              ${e.TotalCalories} cal
+              ${e.TNTC ? ">" : ""}${e.TotalCalories} cal
             </div>
             <button class="text-red-600 font-bold text-lg cursor-pointer"
                     data-id="${e.id}" data-meal="${meal}">
@@ -721,11 +790,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     totalCalories.textContent = `${total}`;
 
-    const banner = document.querySelector("div[style*='height:110px']");
-    if (banner){
-      banner.style.backgroundColor =
+    if (headerBanner){
+      headerBanner.style.backgroundColor =
         total >= 2000 ? "#dc2626" :
-        total >= 1800 ? "#facc15" :
+        total >= 1800 ? "#ffff00" :
         "#dc2626";
     }
   }
@@ -740,31 +808,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // foods clear/save
-  foodsClear.onclick = () => {
+  function clearFoodsForm(){
     foodsFoodName.value="";
     foodsComment.value="";
     foodsCalories.value="";
     foodsServingSize.value="";
     foodsUnit.value="g";
     foodsPerUnit.value="";
+    foodsSearch.value="";
+    foodsList.innerHTML="";
     foodsUnitG.style.backgroundColor = "#dbeafe";
     foodsUnitEach.style.backgroundColor = "white";
-  };
+  }
 
-  foodsUnitG.onclick = () => {
-    foodsUnit.value = "g";
-    foodsUnitG.style.backgroundColor = "#dbeafe";
-    foodsUnitEach.style.backgroundColor = "white";
-    updateFoodsPerUnit();
-  };
-
-  foodsUnitEach.onclick = () => {
-    foodsUnit.value = "each";
-    foodsUnitEach.style.backgroundColor = "#dbeafe";
-    foodsUnitG.style.backgroundColor = "white";
-    updateFoodsPerUnit();
-  };
+  // foods clear/save
+  foodsClear.onclick = () => { clearFoodsForm(); };
 
   foodsSave.onclick = async () => {
     const name = foodsFoodName.value.trim();
@@ -781,7 +839,24 @@ document.addEventListener("DOMContentLoaded", () => {
       Unit: unit,
       ServingSize: s
     });
+
+    clearFoodsForm();
   };
+
+  foodsUnitG.onclick = () => {
+    foodsUnit.value = "g";
+    foodsUnitG.style.backgroundColor = "#dbeafe";
+    foodsUnitEach.style.backgroundColor = "white";
+    updateFoodsPerUnit();
+  };
+
+  foodsUnitEach.onclick = () => {
+    foodsUnit.value = "each";
+    foodsUnitEach.style.backgroundColor = "#dbeafe";
+    foodsUnitG.style.backgroundColor = "white";
+    updateFoodsPerUnit();
+  };
+
 
   // XLSX backup download
   document.getElementById("downloadBackup").onclick = downloadBackup;
@@ -807,18 +882,32 @@ document.addEventListener("DOMContentLoaded", () => {
           ServingSize: e.ServingSize || 0,
           TotalCalories: e.TotalCalories || 0,
           Unit: e.Unit || "",
+          TNTC: e.TNTC ? true : false,
           Timestamp: e.Timestamp || "",
           CaloriesPerServing: e.CaloriesPerServing || 0
         });
       });
     });
 
+    const notesDoc = await db.collection("DailyNotes").doc(key).get();
+    const notes = notesDoc.exists ? notesDoc.data() : {};
+    const notesRows = [{
+      Tefillin: notes.Tefillin || false,
+      TefillinComment: notes.TefillinComment || "",
+      WeightValue: notes.WeightValue != null ? notes.WeightValue : "",
+      ExerciseComment: notes.ExerciseComment || "",
+      BikeMiles: notes.BikeMiles != null ? notes.BikeMiles : "",
+      BikeSpeed: notes.BikeSpeed != null ? notes.BikeSpeed : ""
+    }];
+
     const wb = XLSX.utils.book_new();
     const wsFoods = XLSX.utils.json_to_sheet(foods);
     const wsLogs  = XLSX.utils.json_to_sheet(logsRows);
+    const wsNotes = XLSX.utils.json_to_sheet(notesRows);
 
     XLSX.utils.book_append_sheet(wb, wsFoods, "Foods");
     XLSX.utils.book_append_sheet(wb, wsLogs,  "Logs");
+    XLSX.utils.book_append_sheet(wb, wsNotes, "DailyNotes");
 
     XLSX.writeFile(wb, `backup-${key}.xlsx`);
   }
@@ -835,7 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const logsDoc = await db.collection("Backups").doc(date)
       .collection("Logs").doc("data").get();
 
-    if (!foodsDoc.exists || !logsDoc.exists){
+    if (!foodsDoc.exists){
       alert("Backup not found.");
       return;
     }
@@ -877,15 +966,32 @@ document.addEventListener("DOMContentLoaded", () => {
           ServingSize: e.ServingSize || 0,
           TotalCalories: e.TotalCalories || 0,
           Unit: e.Unit || "",
+          TNTC: e.TNTC || false,
           Timestamp: e.Timestamp || Date.now(),
           CaloriesPerServing: e.CaloriesPerServing || 0
         });
       }
     }
 
+    // restore daily notes
+    const notesDoc = await db.collection("Backups").doc(date)
+      .collection("DailyNotes").doc("data").get();
+    if (notesDoc.exists){
+      const n = notesDoc.data();
+      await db.collection("DailyNotes").doc(date).set({
+        Tefillin: n.Tefillin || false,
+        TefillinComment: n.TefillinComment || "",
+        WeightValue: n.WeightValue != null ? n.WeightValue : null,
+        ExerciseComment: n.ExerciseComment || "",
+        BikeMiles: n.BikeMiles != null ? n.BikeMiles : null,
+        BikeSpeed: n.BikeSpeed != null ? n.BikeSpeed : null,
+        Timestamp: n.Timestamp || Date.now()
+      }, {merge:true});
+    }
+
     alert("Restore complete.");
-    // loadFoods();  // disable auto-load of food list
     loadLog();
+    loadNotes();
   }
 
   // automatic backup (today)
@@ -905,18 +1011,19 @@ document.addEventListener("DOMContentLoaded", () => {
     await db.collection("Backups").doc(key).collection("Foods").doc("data")
       .set({items: foodsData});
 
-    const b = await db.collection("Logs").doc(key).collection("breakfast").get();
-    const l = await db.collection("Logs").doc(key).collection("lunch").get();
-    const s = await db.collection("Logs").doc(key).collection("snack").get();
-    const d = await db.collection("Logs").doc(key).collection("dinner").get();
-
+    const allLogs = {};
+    for (const meal of MEALS){
+      const snap = await db.collection("Logs").doc(key).collection(meal).get();
+      allLogs[meal] = snap.docs.map(x=>({id:x.id, ...x.data()}));
+    }
     await db.collection("Backups").doc(key).collection("Logs").doc("data")
-      .set({
-        breakfast: b.docs.map(x=>({id:x.id, ...x.data()})),
-        lunch:     l.docs.map(x=>({id:x.id, ...x.data()})),
-        snack:     s.docs.map(x=>({id:x.id, ...x.data()})),
-        dinner:    d.docs.map(x=>({id:x.id, ...x.data()}))
-      });
+      .set(allLogs);
+
+    const notesDoc = await db.collection("DailyNotes").doc(key).get();
+    if (notesDoc.exists){
+      await db.collection("Backups").doc(key).collection("DailyNotes").doc("data")
+        .set(notesDoc.data());
+    }
   }
 
   // UPC buttons
