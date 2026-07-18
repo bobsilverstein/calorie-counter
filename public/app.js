@@ -140,6 +140,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const SHABBAT_LAT = 42.0039;
   const SHABBAT_LON = -87.9703;
 
+  const RED_BANNER_COLOR = "#dc2626";
+  const YELLOW_BANNER_COLOR = "#ffff00";
+
   // UPC scanner state
   let upcStream = null;
   let upcScanning = false;
@@ -263,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
     r.onresult = e => {
       let transcript = e.results[0][0].transcript;
       // Normalize spoken numbers so "10.5" etc. work for numeric inputs.
-      if (target.type === "number" || target.inputMode === "decimal" || target.placeholder === "miles" || target.placeholder === "avg mph") {
+      if (target.type === "number" || target.dataset.normalizeNumbers === "true") {
         const numbers = transcript.match(/-?\d+(\.\d+)?/g);
         transcript = numbers ? numbers.join(".") : transcript;
       }
@@ -791,10 +794,16 @@ document.addEventListener("DOMContentLoaded", () => {
     totalCalories.textContent = `${total}`;
 
     if (headerBanner){
-      headerBanner.style.backgroundColor =
-        total >= 2000 ? "#dc2626" :
-        total >= 1800 ? "#ffff00" :
-        "#dc2626";
+      if (total >= 2000){
+        headerBanner.style.backgroundColor = RED_BANNER_COLOR;
+        headerBanner.style.color = "white";
+      } else if (total >= 1800){
+        headerBanner.style.backgroundColor = YELLOW_BANNER_COLOR;
+        headerBanner.style.color = "#1e3a8a"; // dark blue for contrast on yellow
+      } else {
+        headerBanner.style.backgroundColor = RED_BANNER_COLOR;
+        headerBanner.style.color = "white";
+      }
     }
   }
 
