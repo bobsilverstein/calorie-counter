@@ -429,13 +429,6 @@ async function isJewishHoliday(gDate){
     return false;
   }
 }
-      return data.events.some(ev =>
-        yomTovList.some(name => ev.includes(name))
-      );
-    } catch {
-      return false;
-    }
-  }
 
   function applyTefillinDisable(shabbat, yomTov){
     // On Shabbos/Yom Tov disable ONLY the checkbox; the comment box, its clear
