@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  async function isJewishHoliday(gDate){
+async function isJewishHoliday(gDate){
   const y = gDate.getFullYear();
   const m = gDate.getMonth() + 1;
   const d = gDate.getDate();
