@@ -400,27 +400,35 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   async function isJewishHoliday(gDate){
-    const y = gDate.getFullYear();
-    const m = gDate.getMonth() + 1;
-    const d = gDate.getDate();
+  const y = gDate.getFullYear();
+  const m = gDate.getMonth() + 1;
+  const d = gDate.getDate();
+  const dateStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
-    const url = `https://www.hebcal.com/converter?cfg=json&gy=${y}&gm=${m}&gd=${d}&g2h=1`;
+  const url = `https://www.hebcal.com/hebcal?cfg=json&v=1&start=${dateStr}&end=${dateStr}&maj=on`;
 
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!data.events) return false;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.items) return false;
 
-      const yomTovList = [
-        "Rosh Hashana",
-        "Yom Kippur",
-        "Sukkot",
-        "Shemini Atzeret",
-        "Simchat Torah",
-        "Pesach",
-        "Shavuot"
-      ];
+    const yomTovList = [
+      "Rosh Hashana",
+      "Yom Kippur",
+      "Sukkot",
+      "Shemini Atzeret",
+      "Simchat Torah",
+      "Pesach",
+      "Shavuot"
+    ];
 
+    return data.items.some(item =>
+      item.title && yomTovList.some(name => item.title.includes(name))
+    );
+  } catch {
+    return false;
+  }
+}
       return data.events.some(ev =>
         yomTovList.some(name => ev.includes(name))
       );
