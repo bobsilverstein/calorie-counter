@@ -1049,8 +1049,7 @@ async function isJewishHoliday(gDate){
   pushView("log");
   loadFoods();  // keep foodsCache warm for search (search renders nothing on empty query)
   renderDate();
-  loadMostRecentWeight();
-
+ 
   // Offline indicator
   const offlineBanner = document.getElementById("offlineBanner");
   if (offlineBanner) {
