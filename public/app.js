@@ -142,6 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const RED_BANNER_COLOR = "#dc2626";
   const YELLOW_BANNER_COLOR = "#ffff00";
+  const BLUE_BANNER_COLOR = "#2563eb";
 
   // UPC scanner state
   let upcStream = null;
@@ -803,7 +804,7 @@ async function isJewishHoliday(gDate){
         headerBanner.style.backgroundColor = YELLOW_BANNER_COLOR;
         headerBanner.style.color = "#1e3a8a"; // dark blue for contrast on yellow
       } else {
-        headerBanner.style.backgroundColor = RED_BANNER_COLOR;
+        headerBanner.style.backgroundColor = BLUE_BANNER_COLOR;
         headerBanner.style.color = "white";
       }
     }
