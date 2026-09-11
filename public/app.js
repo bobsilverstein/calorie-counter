@@ -423,8 +423,9 @@ async function isJewishHoliday(gDate){
     ];
 
     return data.items.some(item =>
-      item.title && yomTovList.some(name => item.title.includes(name))
-    );
+  item.title && !item.title.startsWith("Erev") &&
+  yomTovList.some(name => item.title.includes(name))
+);
   } catch {
     return false;
   }
