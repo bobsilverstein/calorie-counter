@@ -714,6 +714,7 @@ async function isJewishHoliday(gDate){
 
     mealsList.innerHTML = "";
     let total = 0;
+    let dayHasTntc = false;
 
     for (const meal of MEALS){
       const s = await db.collection("Logs").doc(key).collection(meal)
@@ -724,6 +725,7 @@ async function isJewishHoliday(gDate){
       total += mealTotal;
 
       const hasTntc = entries.some(e => e.TNTC);
+      if (hasTntc) dayHasTntc = true;
 
     const sec = document.createElement("div");
       sec.className = "border border-blue-300 rounded p-2";
@@ -794,8 +796,8 @@ async function isJewishHoliday(gDate){
       };
     });
 
-    totalCalories.textContent = `${total}`;
-
+    totalCalories.textContent = `${dayHasTntc ? ">>" : ""}${total}`;
+    
     if (headerBanner){
       if (total >= 2000){
         headerBanner.style.backgroundColor = RED_BANNER_COLOR;
