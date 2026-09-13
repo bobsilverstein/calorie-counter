@@ -1,13 +1,3 @@
-const versionNumber = "__APP_VERSION__";
-
-function updateVersionLabel() {
-  document.getElementById("versionLabel").textContent = versionNumber;
-  document.getElementById("pageTitle").textContent =
-    `Calorie Counter — ${versionNumber}`;
-}
-
-updateVersionLabel();
-
 // Register the service worker for offline support (network-first; see sw.js).
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -94,9 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const foodsUnitEach = document.getElementById("foodsUnitEach");
   const foodsServingMic = document.getElementById("foodsServingMic");
 
-  const versionLabel = document.getElementById("versionLabel");
-
-  // UPC scanner refs
+    // UPC scanner refs
   const scanUpcBtn  = document.getElementById("scanUpcBtn");
   const upcModal    = document.getElementById("upcModal");
   const upcCloseBtn = document.getElementById("upcCloseBtn");
