@@ -33,25 +33,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
-      - name: Stamp app version into public/app.js
-        # Replaces the literal __APP_VERSION__ token with V<n>. version.txt (repo
-        # root) is the single source for the integer; bump it to "auto-version" a
-        # release.
-        run: |
-          set -euo pipefail
-          VERSION_NUM="$(tr -cd '0-9' < version.txt)"
-          if [ -z "${VERSION_NUM}" ]; then
-            echo "::error file=version.txt::version.txt does not contain an integer"
-            exit 1
-          fi
-          APP_VERSION="V${VERSION_NUM}"
-          echo "Stamping version: ${APP_VERSION}"
-          if ! grep -q '__APP_VERSION__' public/app.js; then
-            echo "::error file=public/app.js::__APP_VERSION__ token not found in public/app.js"
-            exit 1
-          fi
-          sed -i "s#__APP_VERSION__#${APP_VERSION}#g" public/app.js
-
       - name: Authenticate to Google Cloud (Workload Identity Federation)
         # Keyless: exchanges the GitHub OIDC token for short-lived GCP credentials
         # and exports GOOGLE_APPLICATION_CREDENTIALS for firebase-tools to pick up.
