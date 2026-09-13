@@ -541,7 +541,7 @@ async function isJewishHoliday(gDate){
     const cal = Number(f.CaloriesPerServing) || 0;
     const s   = Number(f.ServingSize) || 0;
     const per = s ? cal / s : cal;
-    return Number(per.toFixed(2));
+    return per.toFixed(2);
   }
 
   function runFoodsSearch(){
