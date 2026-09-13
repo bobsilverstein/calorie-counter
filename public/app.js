@@ -700,9 +700,7 @@ async function isJewishHoliday(gDate){
     weightValue.value        = d.WeightValue != null ? d.WeightValue : "";
     bikeMiles.value          = d.BikeMiles != null ? fmtNumber(d.BikeMiles, 1) : "";
     bikeSpeed.value          = d.BikeSpeed != null ? fmtNumber(d.BikeSpeed, 1) : "";
-  }
-
-  
+    
     const yesterday = new Date(currentDate);
     yesterday.setDate(yesterday.getDate() - 1);
     const ys = await db.collection("DailyNotes").doc(fmt(yesterday)).get();
