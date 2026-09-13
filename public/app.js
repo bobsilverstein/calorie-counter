@@ -718,6 +718,7 @@ async function isJewishHoliday(gDate){
       } else {
         weightTrend.textContent = "👌";
       }
+    } 
     }
   
   // log
