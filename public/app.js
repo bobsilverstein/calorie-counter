@@ -337,6 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tefillinCheckbox.checked=false;
     bikeMiles.value="";
     bikeSpeed.value="";
+    saveNotes();
   };
 
   function showView(v){
