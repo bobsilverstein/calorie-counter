@@ -46,8 +46,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const exerciseMic = document.getElementById("exerciseMic");
 
   const logClear = document.getElementById("logClear");
-  const logSave = document.getElementById("logSave");
-
+  
   const bikeMiles = document.getElementById("bikeMiles");
   const bikeSpeed = document.getElementById("bikeSpeed");
 
@@ -672,7 +671,6 @@ async function isJewishHoliday(gDate){
   };
 
   // save notes
-  logSave.onclick = saveNotes;
 
   async function saveNotes(){
     if (suppressSave) return;
