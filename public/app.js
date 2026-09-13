@@ -308,6 +308,13 @@ document.addEventListener("DOMContentLoaded", () => {
   weightClear.onclick   = () => { weightValue.value=""; saveNotes(); };
   exerciseClear.onclick = () => { exerciseComment.value=""; saveNotes(); };
 
+    tefillinCheckbox.onchange = saveNotes;
+  tefillinComment.onblur    = saveNotes;
+  weightValue.onblur        = saveNotes;
+  exerciseComment.onblur    = saveNotes;
+  bikeMiles.onblur          = saveNotes;
+  bikeSpeed.onblur          = saveNotes;
+  
   function clearAddForm(){
     addFoodName.value="";
     addComment.value="";
