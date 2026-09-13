@@ -584,7 +584,7 @@ async function isJewishHoliday(gDate){
   // add search
   function runAddSearch(){
     const q = addSearch.value.toLowerCase();
-    const list = q ? foodsCache.filter(f=>match(f,q)) : [];
+    const list = q ? foodsCache.filter(f=>match(f,q)).sort((a,b)=>(b.LastUsed||0)-(a.LastUsed||0)) : [];
     addResults.innerHTML = "";
     list.forEach(f=>{
       const b = document.createElement("button");
@@ -594,7 +594,7 @@ async function isJewishHoliday(gDate){
         <div class="text-xs text-blue-700">${f.Comment || ""}</div>
         <div class="text-xs text-blue-700">${foodPerUnit(f)} cal/${f.Unit}</div>
       `;
-      b.onclick = () => {
+        db.collection("Foods").doc(f.id).update({ LastUsed: Date.now() }).catch(()=>{});
         addFoodName.value = f.Food;
         addComment.value  = f.Comment || "";
         addCalories.value = foodPerUnit(f);
