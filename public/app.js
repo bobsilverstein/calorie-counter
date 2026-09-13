@@ -43,7 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
   const weightClear = document.getElementById("weightClear");
   const weightMic = document.getElementById("weightMic");
-
+  const weightKb = document.getElementById("weightKb");
+  
   const exerciseComment = document.getElementById("exerciseComment");
   const exerciseClear = document.getElementById("exerciseClear");
   const exerciseMic = document.getElementById("exerciseMic");
@@ -312,10 +313,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tefillinCheckbox.onchange = saveNotes;
   tefillinComment.onblur    = saveNotes;
-  weightValue.onblur        = saveNotes;
+  weightValue.onblur        = () => { weightValue.setAttribute("inputmode","none"); saveNotes(); };
   exerciseComment.onblur    = saveNotes;
   bikeMiles.onblur          = saveNotes;
   bikeSpeed.onblur          = saveNotes;
+  weightKb.onclick = () => { weightValue.setAttribute("inputmode","decimal"); weightValue.focus(); };
   
   function clearAddForm(){
     addFoodName.value="";
