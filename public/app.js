@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (unit === "g"){
         addCalLabel.textContent = "Calories per gram";
         addServingSize.value = size;
-        addCalories.value = size ? Math.round(calServing / size) : "";
+        addCalories.value = size ? (calServing / size).toFixed(2) : "";
       } else {
         addCalLabel.textContent = "Calories per piece";
         addServingSize.value = 1;
