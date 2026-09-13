@@ -326,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
     addCalories.value="";
     addServing1.value="";
     addServing2.value="";
-    addServingSize.value="";
+    addServingSize.value=1;
     addSearch.value="";
     addResults.innerHTML="";
     addTotal.value="";
@@ -607,7 +607,7 @@ async function isJewishHoliday(gDate){
           f.Unit === "g" ? "Calories per gram" : "Calories per piece";
         addServing1.value = "";
         addServing2.value = "";
-        addServingSize.value = "";
+        addServingSize.value = 1;
         addSearch.value = "";
         addResults.innerHTML = "";
         updateAddTotal();
@@ -623,7 +623,7 @@ async function isJewishHoliday(gDate){
     const s1 = Number(addServing1.value) || 0;
     const s2 = Number(addServing2.value) || 0;
     const sum = s1 + s2;
-    addServingSize.value = sum ? sum : "";
+    addServingSize.value = sum ? sum : 1;
     updateAddTotal();
   }
 
