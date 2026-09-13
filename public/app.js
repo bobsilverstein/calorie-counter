@@ -826,7 +826,7 @@ async function isJewishHoliday(gDate){
     foodsFoodName.value="";
     foodsComment.value="";
     foodsCalories.value="";
-    foodsServingSize.value="";
+    foodsServingSize.value=1;
     foodsUnit.value="g";
     foodsPerUnit.value="";
     foodsSearch.value="";
