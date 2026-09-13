@@ -38,6 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const tefillinMic = document.getElementById("tefillinMic");
 
   const weightValue = document.getElementById("weightValue");
+
+  const weightTrend = document.getElementById("weightTrend");
+  
   const weightClear = document.getElementById("weightClear");
   const weightMic = document.getElementById("weightMic");
 
@@ -699,6 +702,24 @@ async function isJewishHoliday(gDate){
     bikeSpeed.value          = d.BikeSpeed != null ? fmtNumber(d.BikeSpeed, 1) : "";
   }
 
+  
+    const yesterday = new Date(currentDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const ys = await db.collection("DailyNotes").doc(fmt(yesterday)).get();
+    const yWeight = ys.exists ? ys.data().WeightValue : null;
+    const tWeight = d.WeightValue;
+    if (weightTrend) {
+      if (tWeight == null || yWeight == null) {
+        weightTrend.textContent = "";
+      } else if (tWeight < yWeight) {
+        weightTrend.textContent = "👍";
+      } else if (tWeight > yWeight) {
+        weightTrend.textContent = "👎";
+      } else {
+        weightTrend.textContent = "👌";
+      }
+    }
+  
   // log
   async function loadLog(){
     const key = fmt(currentDate);
