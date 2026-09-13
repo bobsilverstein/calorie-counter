@@ -594,6 +594,7 @@ async function isJewishHoliday(gDate){
         <div class="text-xs text-blue-700">${f.Comment || ""}</div>
         <div class="text-xs text-blue-700">${foodPerUnit(f)} cal/${f.Unit}</div>
       `;
+      b.onclick = () => {
         db.collection("Foods").doc(f.id).update({ LastUsed: Date.now() }).catch(()=>{});
         addFoodName.value = f.Food;
         addComment.value  = f.Comment || "";
