@@ -821,7 +821,10 @@ async function isJewishHoliday(gDate){
     totalCalories.textContent = `${dayHasTntc ? ">>" : ""}${total}`;
     
     if (headerBanner){
-      if (total >= 2000){
+      if (dayHasTntc){
+        headerBanner.style.backgroundColor = RED_BANNER_COLOR;
+        headerBanner.style.color = "white";
+      } else if (total >= 2000){
         headerBanner.style.backgroundColor = RED_BANNER_COLOR;
         headerBanner.style.color = "white";
       } else if (total >= 1800){
