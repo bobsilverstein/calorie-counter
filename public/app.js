@@ -84,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const foodsPerUnit = document.getElementById("foodsPerUnit");
   const foodsClear = document.getElementById("foodsClear");
   const foodsSave = document.getElementById("foodsSave");
+  const foodsDelete = document.getElementById("foodsDelete");
   const foodsUnitG = document.getElementById("foodsUnitG");
   const foodsUnitEach = document.getElementById("foodsUnitEach");
   const foodsServingMic = document.getElementById("foodsServingMic");
@@ -105,6 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentDate = new Date();
   let currentMeal = "breakfast";
   let foodsCache = [];
+  let currentFoodId = null;
   let suppressSave = false;
 
   const dNamesFull = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -573,6 +575,7 @@ async function isJewishHoliday(gDate){
   foodsSearch.oninput = runFoodsSearch;
 
   function loadFoodEditor(f){
+    currentFoodId = f.id;
     foodsFoodName.value = f.Food;
     foodsComment.value  = f.Comment || "";
 
@@ -847,7 +850,8 @@ async function isJewishHoliday(gDate){
     }
   }
 
-  function clearFoodsForm(){
+   function clearFoodsForm(){
+    currentFoodId = null;
     foodsFoodName.value="";
     foodsComment.value="";
     foodsCalories.value="";
