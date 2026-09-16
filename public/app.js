@@ -862,7 +862,6 @@ async function isJewishHoliday(gDate){
 
   // foods clear/save
   foodsClear.onclick = () => { clearFoodsForm(); };
-
   foodsSave.onclick = async () => {
     const name = foodsFoodName.value.trim();
     if (!name) return;
@@ -879,6 +878,14 @@ async function isJewishHoliday(gDate){
       ServingSize: s
     });
 
+        clearFoodsForm();
+  };
+
+  foodsDelete.onclick = async () => {
+    if (!currentFoodId) return;
+    const ok = confirm(`Delete "${foodsFoodName.value.trim()}" permanently? This cannot be undone.`);
+    if (!ok) return;
+    await db.collection("Foods").doc(currentFoodId).delete();
     clearFoodsForm();
   };
 
