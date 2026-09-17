@@ -1,4 +1,4 @@
-// Register the service worker for offline support (network-first; see sw.js).
+/// Register the service worker for offline support (network-first; see sw.js).
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -456,7 +456,8 @@ async function isJewishHoliday(gDate){
   }
 
  async function loadShabbatInfo(date){
-  if (date.getDay() !== 5){
+    const dayOfWeek = date.getDay();
+  if (dayOfWeek !== 5 && dayOfWeek !== 6){
     if (shabbatInfo) shabbatInfo.classList.add("hidden");
     return;
   }
@@ -477,7 +478,7 @@ async function isJewishHoliday(gDate){
     const parsha  = items.find(i => i.category === "parashat");
 
     shabbatCandles.textContent =
-      candles
+      (dayOfWeek === 5 && candles)
         ? `Candle lighting (${data.location?.title || "Location"}): ${candles.title}`
         : "";
 
