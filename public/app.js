@@ -620,6 +620,7 @@ async function isJewishHoliday(gDate){
         addSearch.value = "";
         addResults.innerHTML = "";
         updateAddTotal();
+        addServing1.focus();
       };
       addResults.appendChild(b);
     });
