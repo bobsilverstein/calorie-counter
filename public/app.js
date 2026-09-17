@@ -712,10 +712,16 @@ async function isJewishHoliday(gDate){
     bikeMiles.value          = d.BikeMiles != null ? fmtNumber(d.BikeMiles, 1) : "";
     bikeSpeed.value          = d.BikeSpeed != null ? fmtNumber(d.BikeSpeed, 1) : "";
     
-    const yesterday = new Date(currentDate);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const ys = await db.collection("DailyNotes").doc(fmt(yesterday)).get();
-    const yWeight = ys.exists ? ys.data().WeightValue : null;
+    const prevSnap = await db.collection("DailyNotes")
+      .where(firebase.firestore.FieldPath.documentId(), "<", fmt(currentDate))
+      .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
+      .limit(30)
+      .get();
+    let yWeight = null;
+    for (const doc of prevSnap.docs) {
+      const w = doc.data().WeightValue;
+      if (w != null) { yWeight = w; break; }
+    }
     const tWeight = d.WeightValue;
     if (weightTrend) {
       if (tWeight == null || yWeight == null) {
