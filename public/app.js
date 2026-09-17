@@ -478,7 +478,7 @@ async function isJewishHoliday(gDate){
 
     shabbatCandles.textContent =
       (dayOfWeek === 5 && candles)
-        ? `Candle lighting (${data.location?.title || "Location"}): ${candles.title}`
+        ? `Candle lighting (Elk Grove Village, IL): ${candles.title}`
         : "";
 
     shabbatParsha.textContent =
