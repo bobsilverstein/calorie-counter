@@ -467,8 +467,7 @@ async function isJewishHoliday(gDate){
   const gy = date.getFullYear();
   const gm = date.getMonth() + 1;
   const gd = date.getDate();
-  const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&b=18&M=on&gy=${gy}&gm=${gm}&gd=${gd}`;
-
+    const url = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&tzid=America/Chicago&b=18&M=on&gy=${gy}&gm=${gm}&gd=${gd}`;
   try {
     const res = await fetch(url);
     const data = await res.json();
