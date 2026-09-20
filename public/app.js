@@ -513,14 +513,16 @@ async function isJewishHoliday(gDate){
     suppressSave = false;
   }
 
-  prevDay.onclick = () => {
+ prevDay.onclick = () => {
     currentDate.setDate(currentDate.getDate() - 1);
     renderDate();
+    pushView("log");
   };
 
   nextDay.onclick = () => {
     currentDate.setDate(currentDate.getDate() + 1);
     renderDate();
+    pushView("log");
   };
 
   todayButton.onclick = () => {
