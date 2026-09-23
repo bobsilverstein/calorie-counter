@@ -883,7 +883,7 @@ async function isJewishHoliday(gDate){
     const s    = Number(foodsServingSize.value) || 0;
     const unit = foodsUnit.value;
 
-    await db.collection("Foods").doc().set({
+      await (currentFoodId ? db.collection("Foods").doc(currentFoodId) : db.collection("Foods").doc()).set({
       Food: name,
       Comment: foodsComment.value.trim(),
       CaloriesPerServing: cal,
