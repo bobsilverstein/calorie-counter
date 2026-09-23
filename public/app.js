@@ -445,16 +445,11 @@ async function getHolidayInfo(gDate){
     for (const item of data.items){
       const info = parseHolidayLabel(item.title);
       if (info) return info;
-    }
+       return { block: false, label: null };
+  } catch {
     return { block: false, label: null };
-  } catch {
-    
-    return data.items.some(item =>
-      item.title && !item.title.startsWith("Erev") &&
-      yomTovList.some(name => item.title.includes(name))
-    );
-  } catch {
-    return false;
+  }
+};
   }
 }
 
