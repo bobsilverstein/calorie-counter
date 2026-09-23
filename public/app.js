@@ -448,10 +448,7 @@ async function getHolidayInfo(gDate){
     }
     return { block: false, label: null };
   } catch {
-    return { block: false, label: null };
-  }
-}
-
+    
     return data.items.some(item =>
       item.title && !item.title.startsWith("Erev") &&
       yomTovList.some(name => item.title.includes(name))
