@@ -755,8 +755,11 @@ async function getHolidayInfo(gDate){
     const key = fmt(currentDate);
 
     const shabbat = currentDate.getDay() === 6;
-    const yomTov  = await isJewishHoliday(currentDate);
-    applyTefillinDisable(shabbat, yomTov);
+       const holidayInfo = await getHolidayInfo(currentDate);
+    applyTefillinDisable(shabbat, holidayInfo.block);
+    if (holidayInfo.label && !tefillinComment.value) {
+      tefillinComment.value = holidayInfo.label;
+    }
 
     mealsList.innerHTML = "";
     let total = 0;
