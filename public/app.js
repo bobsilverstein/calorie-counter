@@ -407,28 +407,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-async function isJewishHoliday(gDate){
+function parseHolidayLabel(title){
+  if (!title || title.startsWith("Erev")) return null;
+  const roman = {I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
+  let m;
+  if (m = title.match(/^Chanukah: (\d+) Candle/)) return { label: `Chanukah ${m[1]}`, block: false };
+  if (title.includes("Rosh Hashana")) return { label: "Rosh Hashana", block: true };
+  if (title.includes("Yom Kippur")) return { label: "Yom Kippur", block: true };
+  if (m = title.match(/^Sukkot (I|II|III|IV|V|VI|VII)\b/)) {
+    if (title.includes("Hoshana Raba")) return { label: "Hoshana Rabbah", block: true };
+    const n = roman[m[1]];
+    return n <= 2 ? { label: "Succos", block: true } : { label: `Chol Hamoed Succos ${n-2}`, block: true };
+  }
+  if (title.includes("Shmini Atzeret") || title.includes("Shemini Atzeret")) return { label: "Shmini Atzeres", block: true };
+  if (title.includes("Simchat Torah")) return { label: "Simchas Torah", block: true };
+  if (m = title.match(/^Pesach (I|II|III|IV|V|VI|VII|VIII)\b/)) {
+    const n = roman[m[1]];
+    return (n >= 3 && n <= 6) ? { label: `Chol Hamoed Pesach ${n-2}`, block: true } : { label: "Pesach", block: true };
+  }
+  if (title.includes("Shavuot")) return { label: "Shavuos", block: true };
+  if (title.includes("Tisha B'Av")) return { label: "Tisha B'Av", block: false };
+  return null;
+}
+
+async function getHolidayInfo(gDate){
   const y = gDate.getFullYear();
   const m = gDate.getMonth() + 1;
   const d = gDate.getDate();
   const dateStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
-  const url = `https://www.hebcal.com/hebcal?cfg=json&v=1&start=${dateStr}&end=${dateStr}&maj=on`;
+  const url = `https://www.hebcal.com/hebcal?cfg=json&v=1&start=${dateStr}&end=${dateStr}&maj=on&min=on`;
 
   try {
     const res = await fetch(url);
     const data = await res.json();
-    if (!data.items) return false;
-
-    const yomTovList = [
-      "Rosh Hashana",
-      "Yom Kippur",
-      "Sukkot",
-      "Shemini Atzeret",
-      "Simchat Torah",
-      "Pesach",
-      "Shavuot"
-    ];
+    if (!data.items) return { block: false, label: null };
+    for (const item of data.items){
+      const info = parseHolidayLabel(item.title);
+      if (info) return info;
+    }
+    return { block: false, label: null };
+  } catch {
+    return { block: false, label: null };
+  }
+}
 
     return data.items.some(item =>
       item.title && !item.title.startsWith("Erev") &&
