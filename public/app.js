@@ -729,6 +729,7 @@ async function getHolidayInfo(gDate){
   }
 
   async function loadNotes(){
+    const holidayInfo = await getHolidayInfo(currentDate);
     const s = await db.collection("DailyNotes").doc(fmt(currentDate)).get();
     const d = s.exists ? s.data() : {};
 
@@ -766,14 +767,10 @@ async function getHolidayInfo(gDate){
   // log
   async function loadLog(){
     const key = fmt(currentDate);
-
     const shabbat = currentDate.getDay() === 6;
-       const holidayInfo = await getHolidayInfo(currentDate);
+    const holidayInfo = await getHolidayInfo(currentDate);
     applyTefillinDisable(shabbat, holidayInfo.block);
-    if (holidayInfo.label && !tefillinComment.value) {
-      tefillinComment.value = holidayInfo.label;
-    }
-
+    
     mealsList.innerHTML = "";
     let total = 0;
     let dayHasTntc = false;
