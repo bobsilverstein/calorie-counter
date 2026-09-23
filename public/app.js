@@ -445,14 +445,12 @@ async function getHolidayInfo(gDate){
     for (const item of data.items){
       const info = parseHolidayLabel(item.title);
       if (info) return info;
-       return { block: false, label: null };
+    }
+    return { block: false, label: null };
   } catch {
     return { block: false, label: null };
   }
-};
-  }
 }
-
   function applyTefillinDisable(shabbat, yomTov){
     // On Shabbos/Yom Tov disable ONLY the checkbox; the comment box, its clear
     // button, and the mic stay active (issue #9).
