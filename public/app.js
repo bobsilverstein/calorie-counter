@@ -430,35 +430,20 @@ function parseHolidayLabel(title){
   return null;
 }
 
-async function fetchHolidayItems(dateStr){
-  const url = `https://www.hebcal.com/hebcal?cfg=json&v=1&start=${dateStr}&end=${dateStr}&maj=on&min=on`;
-  const res = await fetch(url);
-  const data = await res.json();
-  return data.items || [];
-}
-
 async function getHolidayInfo(gDate){
   const y = gDate.getFullYear();
   const m = gDate.getMonth() + 1;
   const d = gDate.getDate();
   const dateStr = `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const url = `https://www.hebcal.com/hebcal?cfg=json&v=1&start=${dateStr}&end=${dateStr}&maj=on&min=on`;
 
   try {
-    let items = await fetchHolidayItems(dateStr);
-    for (const item of items){
+    const res = await fetch(url);
+    const data = await res.json();
+    for (const item of (data.items || [])){
       const info = parseHolidayLabel(item.title);
       if (info) return info;
     }
-
-    const prev = new Date(gDate);
-    prev.setDate(prev.getDate() - 1);
-    const prevStr = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,"0")}-${String(prev.getDate()).padStart(2,"0")}`;
-    items = await fetchHolidayItems(prevStr);
-    for (const item of items){
-      const info = parseHolidayLabel(item.title);
-      if (info) return info;
-    }
-
     return { block: false, label: null };
   } catch {
     return { block: false, label: null };
