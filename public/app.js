@@ -417,7 +417,7 @@ function parseHolidayLabel(title){
   if (m = title.match(/^Sukkot (I|II|III|IV|V|VI|VII)\b/)) {
     if (title.includes("Hoshana Raba")) return { label: "Hoshana Rabbah", block: true };
     const n = roman[m[1]];
-    return n <= 2 ? { label: "Succos", block: true } : { label: `Chol Hamoed Succos ${n-2}`, block: true };
+    return n <= 2 ? { label: `Succos ${n}`, block: true } : { label: `Chol Hamoed Succos ${n-2}`, block: true };
   }
   if (title.includes("Shmini Atzeret") || title.includes("Shemini Atzeret")) return { label: "Shmini Atzeres", block: true };
   if (title.includes("Simchat Torah")) return { label: "Simchas Torah", block: true };
