@@ -412,7 +412,7 @@ function parseHolidayLabel(title){
   const roman = {I:1,II:2,III:3,IV:4,V:5,VI:6,VII:7,VIII:8};
   let m;
   if (m = title.match(/^Chanukah: (\d+) Candle/)) return { label: `Chanukah ${m[1]}`, block: false };
-  if (title.includes("Rosh Hashana")) return { label: "Rosh Hashana", block: true };
+  if (m = title.match(/^Rosh Hashana( \d+| II)?$/)) return { label: m[1] === " II" ? "Rosh Hashana 2" : "Rosh Hashana 1", block: true };
   if (title.includes("Yom Kippur")) return { label: "Yom Kippur", block: true };
   if (m = title.match(/^Sukkot (I|II|III|IV|V|VI|VII)\b/)) {
     if (title.includes("Hoshana Raba")) return { label: "Hoshana Rabbah", block: true };
