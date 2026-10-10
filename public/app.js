@@ -425,6 +425,7 @@ function parseHolidayLabel(title){
     const n = roman[m[1]];
     return (n >= 3 && n <= 6) ? { label: `Chol Hamoed Pesach ${n-2}`, block: true } : { label: "Pesach", block: true };
   }
+  if (m = title.match(/^Shavuot (I|II)$/)) return { label: `Shavuos ${roman[m[1]]}`, block: true };
   if (title.includes("Shavuot")) return { label: "Shavuos", block: true };
   if (title.includes("Tisha B'Av")) return { label: "Tisha B'Av", block: false };
   return null;
