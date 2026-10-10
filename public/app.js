@@ -423,6 +423,7 @@ function parseHolidayLabel(title){
   if (title.includes("Simchat Torah")) return { label: "Simchas Torah", block: true };
   if (m = title.match(/^Pesach (I|II|III|IV|V|VI|VII|VIII)\b/)) {
     const n = roman[m[1]];
+    if (n <= 2) return { label: `Pesach ${n}`, block: true };
     return (n >= 3 && n <= 6) ? { label: `Chol Hamoed Pesach ${n-2}`, block: true } : { label: "Pesach", block: true };
   }
   if (m = title.match(/^Shavuot (I|II)$/)) return { label: `Shavuos ${roman[m[1]]}`, block: true };
