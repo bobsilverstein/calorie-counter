@@ -1069,6 +1069,43 @@ async function getHolidayInfo(gDate){
     loadNotes();
   }
 
+   async function restoreDeletedFood(){
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    const date = prompt("Restore from which backup date? (YYYY-MM-DD)", fmt(y));
+    if (!date) return;
+
+    const foodsDoc = await db.collection("Backups").doc(date)
+      .collection("Foods").doc("data").get();
+    if (!foodsDoc.exists){
+      alert("No backup found for that date.");
+      return;
+    }
+
+    const current = await db.collection("Foods").get();
+    const currentIds = new Set(current.docs.map(d => d.id));
+    const missing = (foodsDoc.data().items || []).filter(f => !currentIds.has(f.id));
+
+    if (!missing.length){
+      alert("Nothing to restore. Your list already has every food in that backup.");
+      return;
+    }
+
+    const menu = missing.map((f, i) => `${i + 1}. ${f.Food}`).join("\n");
+    const pick = prompt(`Foods in that backup that your list no longer has:\n\n${menu}\n\nType the number to restore:`);
+    if (!pick) return;
+
+    const food = missing[Number(pick) - 1];
+    if (!food){
+      alert("That number is not on the list.");
+      return;
+    }
+
+    const { id, ...data } = food;
+    await db.collection("Foods").doc(id).set(data);
+    alert(`Restored "${food.Food}".`);
+  }
+
   // automatic backup (today)
   autoBackup();
 
