@@ -835,9 +835,7 @@ async function getHolidayInfo(gDate){
         `;
         row.querySelector(".edit-btn").onclick = () => startEditEntry(e, meal);
         body.appendChild(row);
-        `;
-        body.appendChild(row);
-      });
+       });
 
       head.onclick = () => {
         clearAddForm();
