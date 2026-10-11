@@ -988,7 +988,7 @@ async function getHolidayInfo(gDate){
   }
 
   // restore tool
-  document.getElementById("restoreBackup").onclick = restoreBackup;
+  document.getElementById("restoreBackup").onclick = restoreDeletedFood;
 
   async function restoreBackup(){
     const date = prompt("Enter backup date (YYYY-MM-DD)");
