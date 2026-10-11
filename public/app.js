@@ -808,11 +808,17 @@ async function getHolidayInfo(gDate){
             <div class="w-16 text-right font-bold text-blue-700">
               ${e.TNTC ? ">" : ""}${e.TotalCalories} cal
             </div>
+                       <button class="edit-btn text-blue-700 font-bold text-lg cursor-pointer">
+              ✎
+            </button>
             <button class="text-red-600 font-bold text-lg cursor-pointer"
                     data-id="${e.id}" data-meal="${meal}">
               ✕
             </button>
           </div>
+        `;
+        row.querySelector(".edit-btn").onclick = () => startEditEntry(e, meal);
+        body.appendChild(row);
         `;
         body.appendChild(row);
       });
