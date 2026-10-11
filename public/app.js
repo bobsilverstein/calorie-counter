@@ -685,16 +685,32 @@ async function getHolidayInfo(gDate){
     const unit = addCalLabel.textContent.includes("gram") ? "g" : "each";
 
     await db.collection("Logs").doc(fmt(currentDate))
-      .collection(currentMeal).add({
-        Food: name,
-        Comment: addComment.value.trim(),
-        CaloriesPerServing: cal,
-        ServingSize: s,
-        TotalCalories: tntc ? 0 : Math.round(t),
-        Unit: unit,
-        TNTC: tntc,
-        Timestamp: Date.now()
-      });
+          const entry = {
+      Food: name,
+      Comment: addComment.value.trim(),
+      CaloriesPerServing: cal,
+      ServingSize: s,
+      TotalCalories: tntc ? 0 : Math.round(t),
+      Unit: unit,
+      TNTC: tntc,
+      Timestamp: Date.now()
+    };
+    const dayRef = db.collection("Logs").doc(fmt(currentDate));
+    const wasEditing = !!editingEntry;
+
+    if (editingEntry && editingEntry.meal === currentMeal){
+      entry.Timestamp = editingEntry.Timestamp;
+      await dayRef.collection(currentMeal).doc(editingEntry.id).set(entry);
+    } else {
+      await dayRef.collection(currentMeal).add(entry);
+      if (editingEntry){
+        await dayRef.collection(editingEntry.meal).doc(editingEntry.id).delete();
+      }
+    }
+
+    clearAddForm();
+    loadLog();
+    if (wasEditing) pushView("log");
 
     clearAddForm();
     loadLog();
