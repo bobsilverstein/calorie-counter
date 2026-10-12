@@ -833,33 +833,9 @@ async function getHolidayInfo(gDate){
             </button>
           </div>
         `;
-         function startEditEntry(e, meal){
-    clearAddForm();
-    currentMeal = meal;
-    document.querySelectorAll(".meal-toggle").forEach(b=>{
-      b.style.backgroundColor = "white";
-      if (b.dataset.meal === meal)
-        b.style.backgroundColor = "#dbeafe";
-    });
-
-    addFoodName.value = e.Food || "";
-    addComment.value  = e.Comment || "";
-    addCalories.value = Number(e.CaloriesPerServing || 0).toFixed(2);
-    addCalLabel.textContent =
-      e.Unit === "g" ? "Calories per gram" : "Calories per piece";
-    addServing1.value = "";
-    addServing2.value = "";
-    addServingSize.value = e.ServingSize || 1;
-    addTntc.checked = !!e.TNTC;
-    updateAddTotal();
-
-    editingEntry = { id: e.id, meal: meal, Timestamp: e.Timestamp };
-    addSave.textContent = "Update";
-    pushView("add");
-  }
-
-  // save serving
-  addSave.onclick = async () => {
+               row.querySelector(".edit-btn").onclick = () => startEditEntry(e, meal);
+        body.appendChild(row);
+      });
 
       head.onclick = () => {
         clearAddForm();
