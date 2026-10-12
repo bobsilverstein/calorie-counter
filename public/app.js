@@ -107,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentMeal = "breakfast";
   let foodsCache = [];
   let currentFoodId = null;
+  let editingEntry = null;
   let suppressSave = false;
 
   const dNamesFull = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
