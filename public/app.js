@@ -338,6 +338,8 @@ document.addEventListener("DOMContentLoaded", () => {
     addTotal.value="";
     addCalLabel.textContent="Calories per gram";
     addTntc.checked = false;
+    editingEntry = null;
+    addSave.textContent = "Save";
   }
 
   addClear.onclick = () => { clearAddForm(); };
