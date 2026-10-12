@@ -352,7 +352,8 @@ document.addEventListener("DOMContentLoaded", () => {
     saveNotes();
   };
 
-  function showView(v){
+   function showView(v){
+    if (v !== "add" && editingEntry) clearAddForm();
     viewLog.classList.add("hidden");
     viewAdd.classList.add("hidden");
     viewFoods.classList.add("hidden");
