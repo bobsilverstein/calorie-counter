@@ -253,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function startMic(target, btn) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR || !voiceOn()) return;
     const r = new SR();
     btn.textContent = "🎙️";
     r.lang = "en-US";
