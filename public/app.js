@@ -309,7 +309,35 @@ document.addEventListener("DOMContentLoaded", () => {
     [addServing1,addServingMic],
     [addServing2,addServingMic],
     [foodsServingSize,foodsServingMic]
-  ].forEach(([i,b])=>micPointer(i,b));
+    ].forEach(([i,b])=>micPointer(i,b));
+
+  const voiceSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  let voiceOff = false;
+  try { voiceOff = localStorage.getItem("voiceOff") === "1"; } catch {}
+
+  function voiceOn(){
+    return voiceSupported && !voiceOff;
+  }
+
+  function applyVoiceMode(){
+    const on = voiceOn();
+    document.querySelectorAll('[id$="Mic"], [id$="Kb"]').forEach(b => b.classList.toggle("hidden", !on));
+    [weightValue, addServing1, addServing2, addServingSize].forEach(i => i.setAttribute("inputmode", on ? "none" : "decimal"));
+    document.getElementById("voiceIcon").textContent  = on ? "🎤" : "⌨️";
+    document.getElementById("voiceLabel").textContent = on ? "Voice On" : "Voice Off";
+  }
+
+  document.getElementById("voiceSwitch").onclick = () => {
+    if (!voiceSupported){
+      alert("This browser does not support voice input. Open the app in Chrome, Edge or Safari to use it.");
+      return;
+    }
+    voiceOff = voiceOn();
+    try { localStorage.setItem("voiceOff", voiceOff ? "1" : "0"); } catch {}
+    applyVoiceMode();
+  };
+
+  applyVoiceMode();
 
   tefillinClear.onclick = () => { tefillinComment.value=""; saveNotes(); };
   weightClear.onclick   = () => { weightValue.value=""; saveNotes(); };
