@@ -323,9 +323,9 @@ document.addEventListener("DOMContentLoaded", () => {
   bikeSpeed.onblur          = saveNotes;
   weightKb.onclick = () => { weightValue.setAttribute("inputmode","decimal"); weightValue.focus(); };
   addServingKb.onclick = () => { addServing1.setAttribute("inputmode","decimal"); addServing2.setAttribute("inputmode","decimal"); addServingSize.setAttribute("inputmode","decimal"); addServing1.focus(); };
-  addServing1.onblur = () => addServing1.setAttribute("inputmode","none");
-  addServing2.onblur = () => addServing2.setAttribute("inputmode","none");
-  addServingSize.onblur = () => addServingSize.setAttribute("inputmode","none");
+  addServing1.onblur = () => addServing1.setAttribute("inputmode", voiceOn() ? "none" : "decimal");
+  addServing2.onblur = () => addServing2.setAttribute("inputmode", voiceOn() ? "none" : "decimal");
+  addServingSize.onblur = () => addServingSize.setAttribute("inputmode", voiceOn() ? "none" : "decimal");;
   
   function clearAddForm(){
     addFoodName.value="";
