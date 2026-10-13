@@ -317,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     tefillinCheckbox.onchange = saveNotes;
   tefillinComment.onblur    = saveNotes;
-  weightValue.onblur        = () => { weightValue.setAttribute("inputmode","none"); saveNotes(); };
+  weightValue.onblur        = () => { weightValue.setAttribute("inputmode", voiceOn() ? "none" : "decimal"); saveNotes(); };
   exerciseComment.onblur    = saveNotes;
   bikeMiles.onblur          = saveNotes;
   bikeSpeed.onblur          = saveNotes;
