@@ -767,7 +767,8 @@ async function getHolidayInfo(gDate){
 
     clearAddForm();
     loadLog();
-       if (wasEditing) pushView("log");
+    if (wasEditing) pushView("log");
+    else addSearch.focus();
   };
 
   // save notes
