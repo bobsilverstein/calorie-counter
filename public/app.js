@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const viewLog = document.getElementById("view-log");
   const viewAdd = document.getElementById("view-add");
   const viewFoods = document.getElementById("view-foods");
-
+  const viewMix = document.getElementById("view-mix");
   const navLog = document.getElementById("navLog");
   const navAdd = document.getElementById("navAdd");
   const navFoods = document.getElementById("navFoods");
