@@ -502,8 +502,12 @@ async function getHolidayInfo(gDate){
  async function loadShabbatInfo(date){
     const dayOfWeek = date.getDay();
   if (dayOfWeek !== 5 && dayOfWeek !== 6){
-    if (shabbatInfo) shabbatInfo.classList.add("hidden");
-    return;
+   if (!shabbatInfo || !shabbatCandles || !shabbatParsha) return;
+   const text = await getHolidayCandles(date);
+   shabbatCandles.textContent = text;
+   shabbatParsha.textContent = "";
+   shabbatInfo.classList.toggle("hidden", !text);
+   return;
   }
 
   if (!shabbatInfo || !shabbatCandles || !shabbatParsha) return;
