@@ -200,6 +200,51 @@
     <div class="h-20"></div>
   </div>
 
+   <!-- MIX VIEW (MIXED CEREAL) -->
+  <div id="view-mix" class="view hidden flex-1 overflow-y-auto p-3 space-y-3">
+
+    <input id="mixSearch" type="search" placeholder="Search cereals..."
+           class="w-full border border-blue-300 rounded px-2 py-1 text-sm" />
+
+    <div id="mixResults"
+         class="border border-blue-300 rounded divide-y max-h-40 overflow-y-auto text-sm hidden"></div>
+
+    <div class="border border-blue-300 rounded text-xs">
+      <div class="flex items-center gap-1 px-1 py-1 bg-blue-50 font-semibold">
+        <div class="flex-1">Cereal</div>
+        <div class="w-12 text-right">cal/g</div>
+        <div class="w-14 text-center">g used</div>
+        <div class="w-12 text-right">cal</div>
+        <div class="w-5"></div>
+      </div>
+      <div id="mixRows"></div>
+      <div class="flex items-center gap-1 px-1 py-1 bg-blue-50 font-bold border-t border-blue-300">
+        <div class="flex-1">Total</div>
+        <div class="w-12"></div>
+        <div id="mixTotalG" class="w-14 text-center">0</div>
+        <div id="mixTotalCal" class="w-12 text-right">0</div>
+        <div class="w-5"></div>
+      </div>
+    </div>
+
+    <div class="text-center font-bold text-blue-800">
+      Mixture: <span id="mixCalPerG">—</span> cal/g
+    </div>
+
+    <div class="flex gap-2">
+      <button id="mixReset"
+              class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold cursor-pointer">
+        Reset
+      </button>
+      <button id="mixSave"
+              class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold cursor-pointer">
+        Save
+      </button>
+    </div>
+
+    <div class="h-20"></div>
+  </div>
+
   <!-- FOODS VIEW -->
   <div id="view-foods" class="view hidden flex-1 overflow-y-auto p-3 space-y-3">
 
