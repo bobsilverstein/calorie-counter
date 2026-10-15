@@ -525,6 +525,8 @@ async function getHolidayInfo(gDate){
         ? `Candle lighting (Elk Grove Village, IL): ${candles.title}`
         : "";
 
+    if (dayOfWeek === 6) shabbatCandles.textContent = await getHolidayCandles(date);
+
     shabbatParsha.textContent =
       parsha
         ? `Parsha: ${parsha.hebrew} / ${parsha.title}`
