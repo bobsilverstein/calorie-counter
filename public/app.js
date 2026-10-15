@@ -499,6 +499,21 @@ async function getHolidayInfo(gDate){
     tefillinMic.classList.remove("opacity-40");
   }
 
+   async function getHolidayCandles(date){
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    const url = `https://www.hebcal.com/hebcal?cfg=json&v=1&maj=on&c=on&geo=pos&latitude=${SHABBAT_LAT}&longitude=${SHABBAT_LON}&tzid=America/Chicago&b=18&start=${y}-${m}-${d}&end=${y}-${m}-${d}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const candles = (data.items || []).find(i => i.category === "candles");
+      return candles ? `Candle lighting (Elk Grove Village, IL): ${candles.title}` : "";
+    } catch {
+      return "";
+    }
+  }
+
  async function loadShabbatInfo(date){
     const dayOfWeek = date.getDay();
   if (dayOfWeek !== 5 && dayOfWeek !== 6){
