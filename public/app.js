@@ -602,6 +602,15 @@ async function getHolidayInfo(gDate){
     pushView("log");
   };
 
+  document.addEventListener("keydown", ev => {
+    if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+    if (ev.ctrlKey || ev.altKey || ev.metaKey || ev.shiftKey) return;
+    const t = ev.target;
+    if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+    ev.preventDefault();
+    (ev.key === "ArrowLeft" ? prevDay : nextDay).onclick();
+  });
+
   todayButton.onclick = () => {
     currentDate = new Date();
     renderDate();
