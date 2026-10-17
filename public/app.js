@@ -1275,10 +1275,11 @@ async function getHolidayInfo(gDate){
           r.g = inp.value;
           cal.textContent = Number(r.g) ? Math.round(mixCal(r)) : "";
           updateMixTotals();
+          syncCerealFood();
         };
         inp.onchange = saveMix;
         inp.onkeydown = ev => { if (ev.key === "Enter") mixSearch.focus(); };
-        del.onclick = () => { mixRows.splice(i, 1); renderMix(); saveMix(); };
+        del.onclick = () => { mixRows.splice(i, 1); renderMix(); saveMix(); syncCerealFood(); };
         row.append(name, per, inp, cal, del);
       }
       mixRowsEl.appendChild(row);
@@ -1340,26 +1341,33 @@ async function getHolidayInfo(gDate){
     mixRows.forEach(r => { r.g = ""; });
     renderMix();
     saveMix();
+    syncCerealFood();
   };
 
-  document.getElementById("mixSave").onclick = async () => {
-    let g = 0, cal = 0;
-    mixRows.forEach(r => { g += Number(r.g) || 0; cal += mixCal(r); });
-    if (!g){
-      alert("Enter the grams for at least one cereal first.");
-      return;
-    }
-    const perG = Math.round((cal / g) * 100) / 100;
-    const old = foodsCache.find(f => f.Food === "Cereal" && f.Comment === "Mixed");
-    const ref = old ? db.collection("Foods").doc(old.id) : db.collection("Foods").doc();
-    await ref.set({
-      Food: "Cereal",
-      Comment: "Mixed",
-      CaloriesPerServing: perG,
-      Unit: "g",
-      ServingSize: 1
-    }, { merge: true });
-  };
+  let cerealFoodId = null;
+  let cerealTimer = null;
+
+  function syncCerealFood(){
+    clearTimeout(cerealTimer);
+    cerealTimer = setTimeout(async () => {
+      let g = 0, cal = 0;
+      mixRows.forEach(r => { g += Number(r.g) || 0; cal += mixCal(r); });
+      const perG = g ? Math.round((cal / g) * 100) / 100 : 0;
+      if (!cerealFoodId){
+        const old = foodsCache.find(f => f.Food === "Cereal" && f.Comment === "Mixed");
+        cerealFoodId = old ? old.id : db.collection("Foods").doc().id;
+      }
+      try {
+        await db.collection("Foods").doc(cerealFoodId).set({
+          Food: "Cereal",
+          Comment: "Mixed",
+          CaloriesPerServing: perG,
+          Unit: "g",
+          ServingSize: 1
+        }, { merge: true });
+      } catch(e){}
+    }, 800);
+  }
 
   document.getElementById("navMix").onclick = () => {
     refreshMixFromFoods();
