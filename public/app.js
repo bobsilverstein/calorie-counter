@@ -825,11 +825,13 @@ async function getHolidayInfo(gDate){
   // quick add: one-time food for the current day and meal, not saved to Foods
   const quickFood = document.getElementById("quickFood");
   const quickCal  = document.getElementById("quickCal");
+  const quickTntc = document.getElementById("quickTntc");
   document.getElementById("quickAdd").onclick = async () => {
     const name = quickFood.value.trim();
-    const cal  = Number(quickCal.value);
-    if (!name || !cal || cal < 0){
-      alert("Enter a food and its calories.");
+    const cal  = Number(quickCal.value) || 0;
+    const tntc = quickTntc.checked;
+    if (!name || (!tntc && cal <= 0)){
+      alert(tntc ? "Enter a food." : "Enter a food and its calories.");
       return;
     }
     await db.collection("Logs").doc(fmt(currentDate))
@@ -838,13 +840,14 @@ async function getHolidayInfo(gDate){
         Comment: "",
         CaloriesPerServing: cal,
         ServingSize: 1,
-        TotalCalories: Math.round(cal),
+        TotalCalories: tntc ? 0 : Math.round(cal),
         Unit: "each",
-        TNTC: false,
+        TNTC: tntc,
         Timestamp: Date.now()
       });
     quickFood.value = "";
     quickCal.value = "";
+    quickTntc.checked = false;
     loadLog();
     quickFood.focus();
   };
