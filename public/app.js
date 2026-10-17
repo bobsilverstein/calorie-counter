@@ -577,6 +577,7 @@ async function getHolidayInfo(gDate){
       const isOU = dayNum % 2;
       bannerSymbol.textContent = isOU ? "Ⓤ" : "ב״ה";
       bannerSymbol.style.fontWeight = isOU ? "bold" : "normal";
+      bannerSymbol.style.textShadow = isOU ? "none" : "0 0 1px currentColor";
       bannerSymbol.style.fontSize = isOU ? "1.25rem" : "1rem";
       bannerSymbol.style.top = isOU ? "auto" : "6px";
       bannerSymbol.style.bottom = isOU ? "6px" : "auto";
