@@ -571,6 +571,11 @@ async function getHolidayInfo(gDate){
     dayName.textContent = dNamesFull[d.getDay()];
     dayDate.textContent =
       `${mNamesFull[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    const bannerSymbol = document.getElementById("bannerSymbol");
+    if (bannerSymbol){
+      const dayNum = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+      bannerSymbol.textContent = dayNum % 2 ? "Ⓤ" : "ב״ה";
+    }
     nextDay.classList.remove("invisible"); // forward arrow always visible (issue #8)
     todayButton.style.display = isToday(d) ? "none" : "inline-block";
     loadLog();
