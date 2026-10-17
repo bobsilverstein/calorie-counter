@@ -661,6 +661,7 @@ async function getHolidayInfo(gDate){
     const cal = Number(foodsCalories.value) || 0;
     const s   = Number(foodsServingSize.value) || 0;
     foodsPerUnit.value = s ? (cal / s).toFixed(2) : "";
+    applyFoodsSpinner();
   }
 
   // add search
@@ -717,12 +718,19 @@ async function getHolidayInfo(gDate){
   addServing2.oninput = updateServingSize;
 
   // foods per-unit calculator (2 decimals)
+  function applyFoodsSpinner(){
+    foodsServingSize.classList.toggle("no-spin", foodsUnit.value !== "each");
+  }
+
   function updateFoodsPerUnit(){
+    applyFoodsSpinner();
     const cal = Number(foodsCalories.value) || 0;
     const s   = Number(foodsServingSize.value) || 0;
     const per = s ? cal / s : 0;
     foodsPerUnit.value = s ? per.toFixed(2) : "";
   }
+
+  applyFoodsSpinner();
 
   foodsCalories.oninput    = updateFoodsPerUnit;
   foodsServingSize.oninput = updateFoodsPerUnit;
@@ -985,6 +993,7 @@ async function getHolidayInfo(gDate){
     foodsList.innerHTML="";
     foodsUnitG.style.backgroundColor = "#dbeafe";
     foodsUnitEach.style.backgroundColor = "white";
+    applyFoodsSpinner();
   }
 
   // foods clear/save
