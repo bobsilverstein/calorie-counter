@@ -388,9 +388,11 @@ document.addEventListener("DOMContentLoaded", () => {
     viewLog.classList.add("hidden");
     viewAdd.classList.add("hidden");
     viewFoods.classList.add("hidden");
+    viewMix.classList.add("hidden");
     if(v==="log") viewLog.classList.remove("hidden");
     if(v==="add") viewAdd.classList.remove("hidden");
     if(v==="foods") viewFoods.classList.remove("hidden");
+    if(v==="mix") viewMix.classList.remove("hidden");
   }
 
   function pushView(v){
