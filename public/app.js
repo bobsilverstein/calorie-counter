@@ -1204,7 +1204,16 @@ async function getHolidayInfo(gDate){
     alert(`Restored "${food.Food}".`);
   }
 
-   // ---- MIXED CEREAL ----
+    // ---- SPIN ARROWS: only for per-piece foods on the Servings screen ----
+  function applyServingSpinners(){
+    const piece = addCalLabel.textContent.includes("piece");
+    [addServing1, addServing2, addServingSize].forEach(i => i.classList.toggle("no-spin", !piece));
+  }
+  new MutationObserver(applyServingSpinners)
+    .observe(addCalLabel, { childList: true, characterData: true, subtree: true });
+  applyServingSpinners();
+
+  // ---- MIXED CEREAL ----
   const MIX_ROWS = 12;
   const mixSearch   = document.getElementById("mixSearch");
   const mixResults  = document.getElementById("mixResults");
