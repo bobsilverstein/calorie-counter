@@ -988,6 +988,9 @@ async function getHolidayInfo(gDate){
         headerBanner.style.backgroundColor = BLUE_BANNER_COLOR;
         headerBanner.style.color = "white";
       }
+      const arrowColor = headerBanner.style.backgroundColor === "rgb(255, 255, 0)" ? "black" : "white";
+      prevDay.style.color = arrowColor;
+      nextDay.style.color = arrowColor;
     }
   }
 
