@@ -1204,6 +1204,157 @@ async function getHolidayInfo(gDate){
     alert(`Restored "${food.Food}".`);
   }
 
+   // ---- MIXED CEREAL ----
+  const MIX_ROWS = 12;
+  const mixSearch   = document.getElementById("mixSearch");
+  const mixResults  = document.getElementById("mixResults");
+  const mixRowsEl   = document.getElementById("mixRows");
+  const mixTotalG   = document.getElementById("mixTotalG");
+  const mixTotalCal = document.getElementById("mixTotalCal");
+  const mixCalPerG  = document.getElementById("mixCalPerG");
+  let mixRows = [];
+
+  function mixCal(r){ return (Number(r.g) || 0) * r.perG; }
+
+  function updateMixTotals(){
+    let g = 0, cal = 0;
+    mixRows.forEach(r => { g += Number(r.g) || 0; cal += mixCal(r); });
+    mixTotalG.textContent   = Math.round(g * 10) / 10;
+    mixTotalCal.textContent = Math.round(cal);
+    mixCalPerG.textContent  = g ? (cal / g).toFixed(2) : "—";
+  }
+
+  function saveMix(){
+    db.collection("Mix").doc("cereal").set({ rows: mixRows }).catch(()=>{});
+  }
+
+  function renderMix(){
+    mixRowsEl.innerHTML = "";
+    for (let i = 0; i < MIX_ROWS; i++){
+      const r = mixRows[i];
+      const row = document.createElement("div");
+      row.className = "flex items-center gap-1 px-1 py-1 border-t border-blue-100 h-8";
+      if (r){
+        const name = document.createElement("div");
+        name.className = "flex-1 truncate";
+        name.textContent = r.name;
+        const per = document.createElement("div");
+        per.className = "w-12 text-right";
+        per.textContent = r.perG.toFixed(2);
+        const inp = document.createElement("input");
+        inp.type = "number";
+        inp.step = "0.1";
+        inp.setAttribute("inputmode", "decimal");
+        inp.className = "w-14 border border-blue-300 rounded px-1 text-center text-xs";
+        inp.value = r.g || "";
+        const cal = document.createElement("div");
+        cal.className = "w-12 text-right";
+        cal.textContent = Number(r.g) ? Math.round(mixCal(r)) : "";
+        const del = document.createElement("button");
+        del.className = "w-5 text-red-600 font-bold cursor-pointer";
+        del.textContent = "✕";
+        inp.oninput = () => {
+          r.g = inp.value;
+          cal.textContent = Number(r.g) ? Math.round(mixCal(r)) : "";
+          updateMixTotals();
+        };
+        inp.onchange = saveMix;
+        inp.onkeydown = ev => { if (ev.key === "Enter") mixSearch.focus(); };
+        del.onclick = () => { mixRows.splice(i, 1); renderMix(); saveMix(); };
+        row.append(name, per, inp, cal, del);
+      }
+      mixRowsEl.appendChild(row);
+    }
+    updateMixTotals();
+  }
+
+  function refreshMixFromFoods(){
+    mixRows.forEach(r => {
+      const f = foodsCache.find(x => x.id === r.foodId);
+      if (f) r.perG = Number(foodPerUnit(f));
+    });
+  }
+
+  function runMixSearch(){
+    const q = mixSearch.value.toLowerCase();
+    const list = q ? foodsCache.filter(f => f.Unit === "g" && match(f, q)) : [];
+    mixResults.innerHTML = "";
+    mixResults.classList.toggle("hidden", !list.length);
+    list.forEach(f => {
+      const b = document.createElement("button");
+      b.className = "w-full text-left p-2 border-b border-blue-200 cursor-pointer";
+      b.innerHTML = `
+        <div class="font-medium">${f.Food}</div>
+        <div class="text-xs text-blue-700">${f.Comment || ""}</div>
+        <div class="text-xs text-blue-700">${foodPerUnit(f)} cal/g</div>
+      `;
+      b.onclick = () => addMixCereal(f);
+      mixResults.appendChild(b);
+    });
+  }
+
+  function addMixCereal(f){
+    mixSearch.value = "";
+    runMixSearch();
+    let i = mixRows.findIndex(r => r.foodId === f.id);
+    if (i < 0){
+      if (mixRows.length >= MIX_ROWS){
+        alert("The table holds 12 cereals.");
+        return;
+      }
+      mixRows.push({
+        foodId: f.id,
+        name: f.Comment ? `${f.Food} – ${f.Comment}` : f.Food,
+        perG: Number(foodPerUnit(f)),
+        g: ""
+      });
+      i = mixRows.length - 1;
+      saveMix();
+    }
+    renderMix();
+    mixRowsEl.children[i].querySelector("input").focus();
+  }
+
+  mixSearch.oninput = runMixSearch;
+
+  document.getElementById("mixReset").onclick = () => {
+    if (!confirm("Clear all grams? The cereals stay in the table.")) return;
+    mixRows.forEach(r => { r.g = ""; });
+    renderMix();
+    saveMix();
+  };
+
+  document.getElementById("mixSave").onclick = async () => {
+    let g = 0, cal = 0;
+    mixRows.forEach(r => { g += Number(r.g) || 0; cal += mixCal(r); });
+    if (!g){
+      alert("Enter the grams for at least one cereal first.");
+      return;
+    }
+    const perG = Math.round((cal / g) * 100) / 100;
+    const old = foodsCache.find(f => f.Food === "Cereal" && f.Comment === "Mixed");
+    const ref = old ? db.collection("Foods").doc(old.id) : db.collection("Foods").doc();
+    await ref.set({
+      Food: "Cereal",
+      Comment: "Mixed",
+      CaloriesPerServing: perG,
+      Unit: "g",
+      ServingSize: 1
+    }, { merge: true });
+    alert(`Saved "Cereal – Mixed": ${perG.toFixed(2)} cal/g`);
+  };
+
+  document.getElementById("navMix").onclick = () => {
+    refreshMixFromFoods();
+    renderMix();
+    pushView("mix");
+  };
+
+  db.collection("Mix").doc("cereal").get().then(s => {
+    mixRows = s.exists ? (s.data().rows || []) : [];
+    renderMix();
+  }).catch(() => { renderMix(); });
+
   // automatic backup (today)
   autoBackup();
 
