@@ -371,7 +371,10 @@ document.addEventListener("DOMContentLoaded", () => {
     addSave.textContent = "Save";
   }
 
-  addClear.onclick = () => { clearAddForm(); };
+  addClear.onclick = () => {
+    clearAddForm();
+    try { quickFood.value = ""; quickCal.value = ""; quickTntc.checked = false; } catch(e){}
+  };
 
   logClear.onclick = () => {
     tefillinComment.value="";
@@ -787,8 +790,12 @@ async function getHolidayInfo(gDate){
 
   // save serving
   addSave.onclick = async () => {
+    const quickAdded = commitQuickAdd(false);
     const name = addFoodName.value.trim();
-    if (!name) return;
+    if (!name){
+      if (quickAdded) addSearch.focus();
+      return;
+    }
 
     const tntc = addTntc.checked;
     const cal  = Number(addCalories.value) || 0; // per unit
