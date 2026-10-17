@@ -384,6 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
    function showView(v){
+    if (v !== "add") commitQuickAdd(false);
     if (v !== "add" && editingEntry) clearAddForm();
     viewLog.classList.add("hidden");
     viewAdd.classList.add("hidden");
@@ -592,12 +593,14 @@ async function getHolidayInfo(gDate){
   }
 
  prevDay.onclick = () => {
+    commitQuickAdd(false);
     currentDate.setDate(currentDate.getDate() - 1);
     renderDate();
     pushView("log");
   };
 
   nextDay.onclick = () => {
+    commitQuickAdd(false);
     currentDate.setDate(currentDate.getDate() + 1);
     renderDate();
     pushView("log");
@@ -613,6 +616,7 @@ async function getHolidayInfo(gDate){
   });
 
   todayButton.onclick = () => {
+    commitQuickAdd(false);
     currentDate = new Date();
     renderDate();
     pushView("log");
@@ -826,30 +830,34 @@ async function getHolidayInfo(gDate){
   const quickFood = document.getElementById("quickFood");
   const quickCal  = document.getElementById("quickCal");
   const quickTntc = document.getElementById("quickTntc");
-  document.getElementById("quickAdd").onclick = async () => {
+  // adds the quick-add entry if complete; returns true if it added one
+  function commitQuickAdd(showAlert){
+    try { quickFood; } catch(e){ return false; } // not set up yet at startup
     const name = quickFood.value.trim();
     const cal  = Number(quickCal.value) || 0;
     const tntc = quickTntc.checked;
     if (!name || (!tntc && cal <= 0)){
-      alert(tntc ? "Enter a food." : "Enter a food and its calories.");
-      return;
+      if (showAlert) alert(tntc ? "Enter a food." : "Enter a food and its calories.");
+      return false;
     }
-    await db.collection("Logs").doc(fmt(currentDate))
-      .collection(currentMeal).add({
-        Food: name,
-        Comment: "",
-        CaloriesPerServing: cal,
-        ServingSize: 1,
-        TotalCalories: tntc ? 0 : Math.round(cal),
-        Unit: "each",
-        TNTC: tntc,
-        Timestamp: Date.now()
-      });
+    const day = fmt(currentDate), meal = currentMeal;
     quickFood.value = "";
     quickCal.value = "";
     quickTntc.checked = false;
-    loadLog();
-    quickFood.focus();
+    db.collection("Logs").doc(day).collection(meal).add({
+      Food: name,
+      Comment: "",
+      CaloriesPerServing: cal,
+      ServingSize: 1,
+      TotalCalories: tntc ? 0 : Math.round(cal),
+      Unit: "each",
+      TNTC: tntc,
+      Timestamp: Date.now()
+    }).then(() => loadLog());
+    return true;
+  }
+  quickFood.onkeydown = quickCal.onkeydown = ev => {
+    if (ev.key === "Enter"){ ev.preventDefault(); if (commitQuickAdd(true)) quickFood.focus(); }
   };
 
   // save notes
