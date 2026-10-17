@@ -574,7 +574,11 @@ async function getHolidayInfo(gDate){
     const bannerSymbol = document.getElementById("bannerSymbol");
     if (bannerSymbol){
       const dayNum = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-      bannerSymbol.textContent = dayNum % 2 ? "Ⓤ" : "ב״ה";
+      const isOU = dayNum % 2;
+      bannerSymbol.textContent = isOU ? "Ⓤ" : "ב״ה";
+      bannerSymbol.style.fontWeight = isOU ? "bold" : "normal";
+      bannerSymbol.style.top = isOU ? "auto" : "6px";
+      bannerSymbol.style.bottom = isOU ? "6px" : "auto";
     }
     nextDay.classList.remove("invisible"); // forward arrow always visible (issue #8)
     todayButton.style.display = isToday(d) ? "none" : "inline-block";
