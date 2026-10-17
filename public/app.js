@@ -1359,7 +1359,6 @@ async function getHolidayInfo(gDate){
       Unit: "g",
       ServingSize: 1
     }, { merge: true });
-    alert(`Saved "Cereal – Mixed": ${perG.toFixed(2)} cal/g`);
   };
 
   document.getElementById("navMix").onclick = () => {
