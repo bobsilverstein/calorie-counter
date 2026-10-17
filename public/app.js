@@ -1245,7 +1245,7 @@ async function getHolidayInfo(gDate){
         inp.type = "number";
         inp.step = "0.1";
         inp.setAttribute("inputmode", "decimal");
-        inp.className = "w-14 border border-blue-300 rounded px-1 text-center text-xs";
+        inp.className = "no-spin w-14 border border-blue-300 rounded px-1 text-center text-xs";
         inp.value = r.g || "";
         const cal = document.createElement("div");
         cal.className = "w-12 text-right";
