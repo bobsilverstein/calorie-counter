@@ -1054,7 +1054,7 @@ async function getHolidayInfo(gDate){
     foodsFoodName.value="";
     foodsComment.value="";
     foodsCalories.value="";
-    foodsServingSize.value=1;
+    foodsServingSize.value="";
     foodsUnit.value="g";
     foodsPerUnit.value="";
     foodsSearch.value="";
@@ -1079,7 +1079,7 @@ async function getHolidayInfo(gDate){
       Comment: foodsComment.value.trim(),
       CaloriesPerServing: cal,
       Unit: unit,
-      ServingSize: s
+      ServingSize: s || 1
     });
 
         clearFoodsForm();
