@@ -737,6 +737,8 @@ async function getHolidayInfo(gDate){
 
   // foods per-unit calculator (2 decimals)
   function applyFoodsSpinner(){
+    document.getElementById("foodsPerUnitLabel").textContent =
+      foodsUnit.value === "each" ? "Calories per piece" : "Calories per gram";
     foodsServingSize.classList.toggle("no-spin", foodsUnit.value !== "each");
   }
 
