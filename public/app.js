@@ -49,7 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const exerciseClear = document.getElementById("exerciseClear");
   const exerciseMic = document.getElementById("exerciseMic");
 
-  const logClear = document.getElementById("logClear");
   
   const bikeMiles = document.getElementById("bikeMiles");
   const bikeSpeed = document.getElementById("bikeSpeed");
@@ -347,6 +346,8 @@ document.addEventListener("DOMContentLoaded", () => {
   tefillinComment.onblur    = saveNotes;
   weightValue.onblur        = () => { weightValue.setAttribute("inputmode", voiceOn() ? "none" : "decimal"); saveNotes(); };
   exerciseComment.onblur    = saveNotes;
+  document.getElementById("bikeMilesX").onclick = () => { bikeMiles.value = ""; saveNotes(); };
+  document.getElementById("bikeSpeedX").onclick = () => { bikeSpeed.value = ""; saveNotes(); };
   bikeMiles.onblur          = saveNotes;
   bikeSpeed.onblur          = saveNotes;
   weightKb.onclick = () => { weightValue.setAttribute("inputmode","decimal"); weightValue.focus(); };
@@ -374,16 +375,6 @@ document.addEventListener("DOMContentLoaded", () => {
   addClear.onclick = () => {
     clearAddForm();
     try { quickFood.value = ""; quickCal.value = ""; quickTntc.checked = false; } catch(e){}
-  };
-
-  logClear.onclick = () => {
-    tefillinComment.value="";
-    exerciseComment.value="";
-    weightValue.value="";
-    tefillinCheckbox.checked=false;
-    bikeMiles.value="";
-    bikeSpeed.value="";
-    saveNotes();
   };
 
    function showView(v){
@@ -429,7 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let clearBtn, saveBtn;
     if (!viewLog.classList.contains("hidden")) {
-      clearBtn = logClear; saveBtn = logSave;
+      clearBtn = null; saveBtn = null;
     } else if (!viewAdd.classList.contains("hidden")) {
       clearBtn = addClear; saveBtn = addSave;
     } else if (!viewFoods.classList.contains("hidden")) {
