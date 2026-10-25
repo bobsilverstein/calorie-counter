@@ -689,7 +689,7 @@ async function getHolidayInfo(gDate){
     addResults.innerHTML = "";
     list.forEach(f=>{
       const b = document.createElement("button");
-      b.className = "w-full text-left p-2 border-b border-blue-200 cursor-pointer";
+      b.className = "w-full text-left p-2 border-b border-blue-200 cursor-pointer focus:bg-blue-100 focus:outline-none";
       b.innerHTML = `
         <div class="font-medium">${f.Food}</div>
         <div class="text-xs text-blue-700">${f.Comment || ""}</div>
@@ -715,6 +715,21 @@ async function getHolidayInfo(gDate){
   }
 
   addSearch.oninput = runAddSearch;
+
+  // down/up arrows move through the results; Enter accepts the highlighted food
+  addSearch.addEventListener("keydown", ev => {
+    if (ev.key !== "ArrowDown") return;
+    const first = addResults.querySelector("button");
+    if (first){ ev.preventDefault(); first.focus(); }
+  });
+  addResults.addEventListener("keydown", ev => {
+    if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
+    ev.preventDefault();
+    const b = ev.target.closest("button");
+    const next = ev.key === "ArrowDown" ? b.nextElementSibling : b.previousElementSibling;
+    if (next) next.focus();
+    else if (ev.key === "ArrowUp") addSearch.focus();
+  });
 
   // calc total (serving calories, integer)
   function updateServingSize(){
