@@ -1397,6 +1397,15 @@ async function getHolidayInfo(gDate){
 
   mixSearch.oninput = runMixSearch;
 
+  // red X clears each search bar
+  [addSearch, foodsSearch, mixSearch].forEach(inp => {
+    document.getElementById(inp.id + "X").onclick = () => {
+      inp.value = "";
+      inp.dispatchEvent(new Event("input"));
+      inp.focus();
+    };
+  });
+
   document.getElementById("mixReset").onclick = () => {
     if (!confirm("Clear all grams? The cereals stay in the table.")) return;
     mixRows.forEach(r => { r.g = ""; });
