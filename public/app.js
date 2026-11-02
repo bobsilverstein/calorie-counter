@@ -877,8 +877,14 @@ async function getHolidayInfo(gDate){
 
   // save notes
 
+  // an Exercise entry of "tbs" in any upper/lower case becomes "TBS"
+  function normalizeExercise(){
+    if (/^tbs$/i.test(exerciseComment.value.trim())) exerciseComment.value = "TBS";
+  }
+
   async function saveNotes(){
     if (suppressSave) return;
+    normalizeExercise();
     await db.collection("DailyNotes").doc(fmt(currentDate)).set({
       Tefillin: tefillinCheckbox.checked,
       TefillinComment: tefillinComment.value.trim(),
@@ -898,6 +904,7 @@ async function getHolidayInfo(gDate){
     tefillinCheckbox.checked = !!d.Tefillin;
     tefillinComment.value    = d.TefillinComment || "";
     exerciseComment.value    = d.ExerciseComment || "";
+    normalizeExercise();
     weightValue.value        = d.WeightValue != null ? d.WeightValue : "";
     bikeMiles.value          = d.BikeMiles != null ? fmtNumber(d.BikeMiles, 1) : "";
     bikeSpeed.value          = d.BikeSpeed != null ? fmtNumber(d.BikeSpeed, 1) : "";
