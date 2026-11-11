@@ -350,11 +350,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("bikeSpeedX").onclick = () => { bikeSpeed.value = ""; saveNotes(); };
   bikeMiles.onblur          = saveNotes;
 
-  // Monthly bike-mile totals: current month plus the two before it
+  // Monthly bike-mile totals for the bike year (starts March 1) plus year to date
   const bikeTotals = document.getElementById("bikeTotals");
   async function showBikeTotals(){
     const now = new Date();
-    const months = [2,1,0].map(k => new Date(now.getFullYear(), now.getMonth()-k, 1));
+    const startYear = now.getMonth() >= 2 ? now.getFullYear() : now.getFullYear() - 1;
+    const months = [];
+    for (let d = new Date(startYear, 2, 1); d <= now; d = new Date(d.getFullYear(), d.getMonth()+1, 1)) months.push(d);
     const start = fmt(months[0]);
     const end = fmt(new Date(now.getFullYear(), now.getMonth()+1, 1));
     const id = firebase.firestore.FieldPath.documentId();
@@ -368,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const key = fmt(m).slice(0,7);
       const name = m.toLocaleString("en-US", { month: "long", year: "numeric" });
       return `<div class="flex justify-between"><span>${name}</span><span class="font-semibold">${(tot[key]||0).toFixed(1)} mi</span></div>`;
-    }).join("");
+    }).join("") + `<div class="flex justify-between border-t border-blue-300 mt-1 pt-1 font-bold"><span>Year to date</span><span>${Object.values(tot).reduce((a,b)=>a+b,0).toFixed(1)} mi</span></div>`;
     bikeTotals.classList.remove("hidden");
   }
   document.getElementById("bikeTotalsBtn").onclick = async () => {
