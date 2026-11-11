@@ -349,6 +349,33 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("bikeMilesX").onclick = () => { bikeMiles.value = ""; saveNotes(); };
   document.getElementById("bikeSpeedX").onclick = () => { bikeSpeed.value = ""; saveNotes(); };
   bikeMiles.onblur          = saveNotes;
+
+  // Monthly bike-mile totals: current month plus the two before it
+  const bikeTotals = document.getElementById("bikeTotals");
+  async function showBikeTotals(){
+    const now = new Date();
+    const months = [2,1,0].map(k => new Date(now.getFullYear(), now.getMonth()-k, 1));
+    const start = fmt(months[0]);
+    const end = fmt(new Date(now.getFullYear(), now.getMonth()+1, 1));
+    const id = firebase.firestore.FieldPath.documentId();
+    const s = await db.collection("DailyNotes").where(id, ">=", start).where(id, "<", end).get();
+    const tot = {};
+    s.forEach(d => {
+      const m = d.data().BikeMiles;
+      if (m != null && !isNaN(m)) tot[d.id.slice(0,7)] = (tot[d.id.slice(0,7)] || 0) + Number(m);
+    });
+    bikeTotals.innerHTML = months.map(m => {
+      const key = fmt(m).slice(0,7);
+      const name = m.toLocaleString("en-US", { month: "long", year: "numeric" });
+      return `<div class="flex justify-between"><span>${name}</span><span class="font-semibold">${(tot[key]||0).toFixed(1)} mi</span></div>`;
+    }).join("");
+    bikeTotals.classList.remove("hidden");
+  }
+  document.getElementById("bikeTotalsBtn").onclick = async () => {
+    if (!bikeTotals.classList.contains("hidden")) { bikeTotals.classList.add("hidden"); return; }
+    await saveNotes();
+    try { await showBikeTotals(); } catch(e){ bikeTotals.textContent = "Could not load bike totals."; bikeTotals.classList.remove("hidden"); }
+  };
   bikeSpeed.onblur          = saveNotes;
   weightKb.onclick = () => { weightValue.setAttribute("inputmode","decimal"); weightValue.focus(); };
   addServingKb.onclick = () => { addServing1.setAttribute("inputmode","decimal"); addServing2.setAttribute("inputmode","decimal"); addServingSize.setAttribute("inputmode","decimal"); addServing1.focus(); };
